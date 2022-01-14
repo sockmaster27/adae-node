@@ -1,0 +1,21 @@
+[package]
+name = "ardae-js"
+version = "0.1.0"
+license = "ISC"
+edition = "2021"
+exclude = ["index.node"]
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ardae = { path = "../ardae" }
+
+[dependencies.neon]
+version = "0.9"
+default-features = false
+features = ["napi-6", "channel-api"]
+
+[features]
+record_output = ["ardae/record_output"]
