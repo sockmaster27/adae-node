@@ -10,6 +10,13 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
 const DATA_KEY: &str = "data";
 
+macro_rules! insert_method {
+    ($name:expr, $function:expr, $object:expr, $cx:expr) => {
+        let method_js = JsFunction::new(&mut $cx, $function)?;
+        $object.set(&mut $cx, $name, method_js)?;
+    };
+}
+
 /// A wrapper around the `ardae::Engine` compatible with Neon's API.
 ///
 /// Note that even though these functions are organized as being associated to the `JsEngine`,
@@ -39,13 +46,9 @@ impl JsEngine {
 
         object.set(&mut cx, DATA_KEY, boxed_engine)?;
 
-        // Insert methods
-        let set_volume_js = JsFunction::new(&mut cx, Self::set_volume)?;
-        object.set(&mut cx, "setVolume", set_volume_js)?;
-        let get_peaks_js = JsFunction::new(&mut cx, Self::get_peaks)?;
-        object.set(&mut cx, "getPeak", get_peaks_js)?;
-        let close_js = JsFunction::new(&mut cx, Self::close)?;
-        object.set(&mut cx, "close", close_js)?;
+        insert_method!("setVolume", Self::set_volume, object, cx);
+        insert_method!("getPeak", Self::get_peak, object, cx);
+        insert_method!("close", Self::close, object, cx);
 
         Ok(object)
     }
@@ -69,7 +72,7 @@ impl JsEngine {
         Ok(cx.undefined())
     }
 
-    fn get_peaks(mut cx: MethodContext<JsObject>) -> JsResult<JsNumber> {
+    fn get_peak(mut cx: MethodContext<JsObject>) -> JsResult<JsNumber> {
         let handle = cx.this().get(&mut cx, DATA_KEY)?;
         let boxed: JsBox<RefCell<Option<JsEngine>>> =
             *handle.downcast(&mut cx).or_throw(&mut cx)?;
