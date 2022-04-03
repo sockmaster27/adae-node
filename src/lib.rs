@@ -8,12 +8,13 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     Ok(())
 }
 
+/// Property name of the JsEngine on the JS-object.
 const DATA_KEY: &str = "data";
 
 /// A wrapper around the `ardae::Engine` compatible with Neon's API.
 ///
-/// Note that even though these functions are organized as being associated to the `JsEngine`,
-/// they're supposed to be exposed directly by Neon, and do not follow rust conventions.
+/// Note that even though its functions are organized as being associated to the `JsEngine`,
+/// most of them are supposed to be exposed directly by Neon, and do not follow rust conventions.
 struct JsEngine {
     engine: ardae::Engine,
 
@@ -80,7 +81,8 @@ impl JsEngine {
         }
 
         insert_method!("setVolume", Self::set_volume);
-        insert_method!("getPeak", Self::get_peak);
+        insert_method!("setPanning", Self::set_panning);
+        insert_method!("getMeter", Self::get_meter);
         insert_method!("close", Self::close);
 
         Ok(object)
@@ -97,9 +99,37 @@ impl JsEngine {
         })
     }
 
-    fn get_peak(cx: MethodContext<JsObject>) -> JsResult<JsNumber> {
+    fn set_panning(cx: MethodContext<JsObject>) -> JsResult<JsUndefined> {
         Self::unpack_engine(cx, |mut cx, js_engine| {
-            Ok(cx.number(js_engine.engine.get_peak()))
+            let value_js: JsNumber = *cx.argument(0)?;
+            let value: f32 = value_js.value(&mut cx) as f32;
+
+            js_engine.engine.set_panning(value);
+
+            Ok(cx.undefined())
+        })
+    }
+
+    fn get_meter(cx: MethodContext<JsObject>) -> JsResult<JsObject> {
+        Self::unpack_engine(cx, |mut cx, js_engine| {
+            let [peak, long_peak, rms] = js_engine.engine.get_meter();
+            let peak_js = cx.empty_array();
+            let long_peak_js = cx.empty_array();
+            let rms_js = cx.empty_array();
+
+            for (thing, thing_js) in [(peak, peak_js), (long_peak, long_peak_js), (rms, rms_js)] {
+                for (i, val) in thing.iter().enumerate() {
+                    let index_js = cx.number(i as f64);
+                    let val_js = cx.number(*val);
+                    thing_js.set(&mut cx, index_js, val_js)?;
+                }
+            }
+
+            let meter_js = cx.empty_object();
+            meter_js.set(&mut cx, "peak", peak_js)?;
+            meter_js.set(&mut cx, "longPeak", long_peak_js)?;
+            meter_js.set(&mut cx, "rms", rms_js)?;
+            Ok(meter_js)
         })
     }
 
