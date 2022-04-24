@@ -1,6 +1,12 @@
-use neon::context::Context;
+mod encapsulator;
+mod mixer_track;
+mod shared_engine;
+
 use neon::prelude::*;
-use std::sync::Mutex;
+
+use encapsulator::{encapsulate, prevent_gc, unpack, Method};
+use mixer_track::JsTrack;
+use shared_engine::SharedEngine;
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
@@ -8,161 +14,130 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     Ok(())
 }
 
-/// Property name of the JsEngine on the JS-object.
-const DATA_KEY: &str = "data";
-
 /// A wrapper around the `ardae::Engine` compatible with Neon's API.
 ///
 /// Note that even though its functions are organized as being associated to the `JsEngine`,
 /// most of them are supposed to be exposed directly by Neon, and do not follow rust conventions.
 struct JsEngine {
-    engine: ardae::Engine,
-
-    /// Holding a `Root` to the owning object ensures that it isn't garbage collected.
-    /// This means that the audio won't unexpectedly stop.
-    #[allow(dead_code)]
-    root: Root<JsObject>,
+    engine: SharedEngine,
 }
 impl JsEngine {
-    /// Utility function for unpacking the JsEngine from all the stuff it's wrapped in.
-    ///
-    /// In contrast to all other functions on this struct, this shouldn't be a method on the JS object.
-    //
-    // Would ideally return the JsEngine, but that doesn't appear to be possibly due to the nesting of references.
-    fn unpack_engine<
-        'a,
-        R: Value,
-        F: FnOnce(CallContext<'a, JsObject>, &mut JsEngine) -> JsResult<'a, R>,
-    >(
-        mut cx: CallContext<'a, JsObject>,
-        callback: F,
-    ) -> JsResult<R> {
-        let handle = cx.this().get(&mut cx, DATA_KEY)?;
-        let boxed: JsBox<Mutex<Option<JsEngine>>> = *handle.downcast(&mut cx).or_throw(&mut cx)?;
-        let mutex = &*boxed;
-        let option = &mut *match mutex.lock() {
-            Ok(x) => x,
-            Err(_) => {
-                return cx.throw_error("Another thread panicked while holding a lock on the engine")
-            }
-        };
-        let js_engine = match option {
-            Some(x) => x,
-            None => return cx.throw_error("Engine has been closed"),
-        };
-
-        callback(cx, js_engine)
-    }
-
-    /// Construct a new JavaScript object.
     /// The returned object must adhere to the interface defined in the `index.d.ts` file.
     fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
-        let object = cx.this();
-        let root = object.root(&mut cx);
+        let engine = SharedEngine::new();
 
-        // JsBox allows a rust value to be contained in a JS object.
-        // Mutex allows its value to be borrowed as mutable, blocking until it's available.
-        // Option allows its value to be dropped by rust.
-        let boxed_engine = cx.boxed(Mutex::new(Some(JsEngine {
-            engine: ardae::Engine::new(),
-            root,
-        })));
+        let js_engine = JsEngine { engine };
+        let tracks = Self::construct_tracks(&mut cx, &js_engine)?;
 
-        object.set(&mut cx, DATA_KEY, boxed_engine)?;
-
-        /// Macro for inserting a function as a method on the object.
-        ///
-        /// Takes the name that the method should be exposed with, and the function itself (has to be a function pointer).
-        macro_rules! insert_method {
-            ($name:expr, $function:expr) => {
-                let function_js = JsFunction::new(&mut cx, $function)?;
-                object.set(&mut cx, $name, function_js)?;
-            };
-        }
-
-        insert_method!("setVolume", Self::set_volume);
-        insert_method!("setPanning", Self::set_panning);
-        insert_method!("getMeter", Self::get_meter);
-        insert_method!("close", Self::close);
-
+        let properties = &[("tracks", tracks)];
+        let methods: &[(&str, Method)] = &[
+            ("addTrack", Self::add_track),
+            ("setVolume", Self::set_volume),
+            ("setPanning", Self::set_panning),
+            ("getMeter", Self::get_meter),
+            ("close", Self::close),
+        ];
+        let object = encapsulate(&mut cx, js_engine, properties, methods)?;
+        prevent_gc(&mut cx, object)?;
         Ok(object)
     }
 
-    fn set_volume(cx: MethodContext<JsObject>) -> JsResult<JsUndefined> {
-        Self::unpack_engine(cx, |mut cx, js_engine| {
-            let value_js: JsNumber = *cx.argument(0)?;
-            let value: f32 = value_js.value(&mut cx) as f32;
+    fn construct_tracks<'a>(
+        cx: &mut FunctionContext<'a>,
+        js_engine: &JsEngine,
+    ) -> JsResult<'a, JsValue> {
+        let track_keys = js_engine.engine.unpack(cx, |_cx, engine| {
+            let tracks = engine.tracks();
+            let track_keys: Vec<u32> = tracks.iter().map(|track| track.key()).collect();
+            Ok(track_keys)
+        })?;
 
-            js_engine.engine.set_volume(value);
-
-            Ok(cx.undefined())
-        })
-    }
-
-    fn set_panning(cx: MethodContext<JsObject>) -> JsResult<JsUndefined> {
-        Self::unpack_engine(cx, |mut cx, js_engine| {
-            let value_js: JsNumber = *cx.argument(0)?;
-            let value: f32 = value_js.value(&mut cx) as f32;
-
-            js_engine.engine.set_panning(value);
-
-            Ok(cx.undefined())
-        })
-    }
-
-    fn get_meter(cx: MethodContext<JsObject>) -> JsResult<JsObject> {
-        Self::unpack_engine(cx, |mut cx, js_engine| {
-            let [peak, long_peak, rms] = js_engine.engine.get_meter();
-            let peak_js = cx.empty_array();
-            let long_peak_js = cx.empty_array();
-            let rms_js = cx.empty_array();
-
-            for (thing, thing_js) in [(peak, peak_js), (long_peak, long_peak_js), (rms, rms_js)] {
-                for (i, val) in thing.iter().enumerate() {
-                    let index_js = cx.number(i as f64);
-                    let val_js = cx.number(*val);
-                    thing_js.set(&mut cx, index_js, val_js)?;
-                }
-            }
-
-            let meter_js = cx.empty_object();
-            meter_js.set(&mut cx, "peak", peak_js)?;
-            meter_js.set(&mut cx, "longPeak", long_peak_js)?;
-            meter_js.set(&mut cx, "rms", rms_js)?;
-            Ok(meter_js)
-        })
-    }
-
-    fn close(mut cx: MethodContext<JsObject>) -> JsResult<JsUndefined> {
-        let this = cx.this();
-
-        let handle = this.get(&mut cx, DATA_KEY)?;
-        let boxed: JsBox<Mutex<Option<JsEngine>>> = *handle.downcast(&mut cx).or_throw(&mut cx)?;
-        let mutex = &*boxed;
-        let option = &mut *match mutex.lock() {
-            Ok(x) => x,
-            Err(_) => {
-                return cx.throw_error("Another thread panicked while holding a lock on the engine")
-            }
-        };
-
-        let error_thrower = |mut cx: MethodContext<JsObject>| -> JsResult<JsUndefined> {
-            cx.throw_error("Engine has been closed")
-        };
-        let error_thrower_js = JsFunction::new(&mut cx, error_thrower)?;
-
-        let prop_names = this.get_own_property_names(&mut cx)?.to_vec(&mut cx)?;
-        for key in prop_names {
-            this.set(&mut cx, key, error_thrower_js)?;
+        let js_tracks = JsArray::new(cx, track_keys.len() as u32);
+        for (i, &key) in track_keys.iter().enumerate() {
+            let js_track = JsTrack::construct(cx, key, SharedEngine::clone(&js_engine.engine))?;
+            js_tracks.set(cx, i as u32, js_track)?;
         }
+        Ok(js_tracks.as_value(cx))
+    }
 
-        let undefined = cx.undefined();
-        this.set(&mut cx, DATA_KEY, undefined)?;
+    fn add_track(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
+        let js_track = unpack(&mut cx, |cx, js_engine: &JsEngine| {
+            let key = js_engine.engine.unpack(cx, |cx, engine| {
+                let result = engine.add_track();
+                match result {
+                    Ok(track) => Ok(track.key()),
+                    Err(_) => cx.throw_error("Max number of tracks reached"),
+                }
+            })?;
 
-        // Drop the JsEngine, and free the Root to allow the object to be garbage collected.
-        drop(option.take());
+            JsTrack::construct(cx, key, SharedEngine::clone(&js_engine.engine))
+        })?;
 
-        Ok(cx.undefined())
+        let object = cx.this();
+        let tracks: Handle<JsArray> = object.get(&mut cx, "tracks")?.downcast_or_throw(&mut cx)?;
+        let end = tracks.len(&mut cx);
+        tracks.set(&mut cx, end, js_track)?;
+
+        Ok(js_track.as_value(&mut cx))
+    }
+
+    fn set_volume(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
+        let value_js: JsNumber = *cx.argument(0)?;
+        let value: f32 = value_js.value(&mut cx) as f32;
+
+        unpack(&mut cx, |cx, js_engine: &JsEngine| {
+            js_engine.engine.unpack(cx, |cx, engine| {
+                engine.set_volume(value);
+                Ok(cx.undefined().as_value(cx))
+            })
+        })
+    }
+
+    fn set_panning(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
+        let value_js: JsNumber = *cx.argument(0)?;
+        let value: f32 = value_js.value(&mut cx) as f32;
+
+        unpack(&mut cx, |cx, js_engine: &JsEngine| {
+            js_engine.engine.unpack(cx, |cx, engine| {
+                engine.set_panning(value);
+
+                Ok(cx.undefined().as_value(cx))
+            })
+        })
+    }
+
+    fn get_meter(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
+        unpack(&mut cx, |cx, js_engine: &JsEngine| {
+            js_engine.engine.unpack(cx, |cx, engine| {
+                let [peak, long_peak, rms] = engine.get_meter();
+                let peak_js = cx.empty_array();
+                let long_peak_js = cx.empty_array();
+                let rms_js = cx.empty_array();
+
+                for (thing, thing_js) in [(peak, peak_js), (long_peak, long_peak_js), (rms, rms_js)]
+                {
+                    for (i, val) in thing.iter().enumerate() {
+                        let index_js = cx.number(i as f64);
+                        let val_js = cx.number(*val);
+                        thing_js.set(cx, index_js, val_js)?;
+                    }
+                }
+
+                let meter_js = cx.empty_object();
+                meter_js.set(cx, "peak", peak_js)?;
+                meter_js.set(cx, "longPeak", long_peak_js)?;
+                meter_js.set(cx, "rms", rms_js)?;
+                Ok(meter_js.as_value(cx))
+            })
+        })
+    }
+
+    fn close(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
+        unpack(&mut cx, |cx, js_engine: &JsEngine| {
+            js_engine.engine.close(cx)?;
+
+            Ok(cx.undefined().as_value(cx))
+        })
     }
 }
 

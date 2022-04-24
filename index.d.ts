@@ -1,31 +1,41 @@
 declare module "ardae-js" {
     class Engine {
 
-        /**
-         * The internal data and state of the engine. Do not touch.
-         */
+        /** The internal data and state of the engine. Do not touch. */
         private data: any
+        /** Prevents the object from being prematurely garbage collected. See `Engine.close()`. */
+        private root: any
 
-        /**
-         * Create new engine.
-         */
+        readonly tracks: Track[]
+
+        /** Create and initialize new engine. */
         constructor()
 
-        /**
-         * Sets the volume of the generated tone.
-         * @param {number} value
-         */
-        setVolume(value: number): void
-
-        /**
-         * Get current peak level. This will be updated once every buffer.
-         */
-        getPeak(): number
+        addTrack(): Track
 
         /**
          * Closes the engine down gracefully.
          * After this is called all other functions will throw an `Error`.
          */
         close(): void
+    }
+
+    interface Track {
+        /** Unique identifier of the track. */
+        readonly key: number
+
+        setPanning(value: number): void
+
+        /**
+         * Sets the output volume of the track.
+         * @param {number} value - Volume multiplier
+         */
+        setVolume(value: number): void
+
+        /** Get current peak, long term peak and RMS (Root Mean Square) levels, for each channel. */
+        readMeter(): { peak: [number, number], longPeak: [number, number], rms: [number, number] }
+
+
+        delete(): void
     }
 }
