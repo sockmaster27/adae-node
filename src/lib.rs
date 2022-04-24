@@ -30,13 +30,7 @@ impl JsEngine {
         let tracks = Self::construct_tracks(&mut cx, &js_engine)?;
 
         let properties = &[("tracks", tracks)];
-        let methods: &[(&str, Method)] = &[
-            ("addTrack", Self::add_track),
-            ("setVolume", Self::set_volume),
-            ("setPanning", Self::set_panning),
-            ("getMeter", Self::get_meter),
-            ("close", Self::close),
-        ];
+        let methods: &[(&str, Method)] = &[("addTrack", Self::add_track), ("close", Self::close)];
         let object = encapsulate(&mut cx, js_engine, properties, methods)?;
         prevent_gc(&mut cx, object)?;
         Ok(object)
@@ -79,57 +73,6 @@ impl JsEngine {
         tracks.set(&mut cx, end, js_track)?;
 
         Ok(js_track.as_value(&mut cx))
-    }
-
-    fn set_volume(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
-        let value_js: JsNumber = *cx.argument(0)?;
-        let value: f32 = value_js.value(&mut cx) as f32;
-
-        unpack(&mut cx, |cx, js_engine: &JsEngine| {
-            js_engine.engine.unpack(cx, |cx, engine| {
-                engine.set_volume(value);
-                Ok(cx.undefined().as_value(cx))
-            })
-        })
-    }
-
-    fn set_panning(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
-        let value_js: JsNumber = *cx.argument(0)?;
-        let value: f32 = value_js.value(&mut cx) as f32;
-
-        unpack(&mut cx, |cx, js_engine: &JsEngine| {
-            js_engine.engine.unpack(cx, |cx, engine| {
-                engine.set_panning(value);
-
-                Ok(cx.undefined().as_value(cx))
-            })
-        })
-    }
-
-    fn get_meter(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
-        unpack(&mut cx, |cx, js_engine: &JsEngine| {
-            js_engine.engine.unpack(cx, |cx, engine| {
-                let [peak, long_peak, rms] = engine.get_meter();
-                let peak_js = cx.empty_array();
-                let long_peak_js = cx.empty_array();
-                let rms_js = cx.empty_array();
-
-                for (thing, thing_js) in [(peak, peak_js), (long_peak, long_peak_js), (rms, rms_js)]
-                {
-                    for (i, val) in thing.iter().enumerate() {
-                        let index_js = cx.number(i as f64);
-                        let val_js = cx.number(*val);
-                        thing_js.set(cx, index_js, val_js)?;
-                    }
-                }
-
-                let meter_js = cx.empty_object();
-                meter_js.set(cx, "peak", peak_js)?;
-                meter_js.set(cx, "longPeak", long_peak_js)?;
-                meter_js.set(cx, "rms", rms_js)?;
-                Ok(meter_js.as_value(cx))
-            })
-        })
     }
 
     fn close(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
