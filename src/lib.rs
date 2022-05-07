@@ -30,7 +30,11 @@ impl JsEngine {
         let tracks = Self::construct_tracks(&mut cx, &js_engine)?;
 
         let properties = &[("tracks", tracks)];
-        let methods: &[(&str, Method)] = &[("addTrack", Self::add_track), ("close", Self::close)];
+        let methods: &[(&str, Method)] = &[
+            ("addTrack", Self::add_track),
+            ("getTrack", Self::get_track),
+            ("close", Self::close),
+        ];
         let object = encapsulate(&mut cx, js_engine, properties, methods)?;
         prevent_gc(&mut cx, object)?;
         Ok(object)
@@ -52,6 +56,16 @@ impl JsEngine {
             js_tracks.set(cx, i as u32, js_track)?;
         }
         Ok(js_tracks.as_value(cx))
+    }
+
+    fn get_track(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
+        let key_js: JsNumber = *cx.argument(0)?;
+        let key = key_js.value(&mut cx) as u32;
+
+        unpack(&mut cx, |cx, js_engine: &JsEngine| {
+            let track = JsTrack::construct(cx, key, SharedEngine::clone(&js_engine.engine))?;
+            Ok(track.as_value(cx))
+        })
     }
 
     fn add_track(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {

@@ -51,7 +51,7 @@ impl JsTrack {
 
     fn set_panning(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
         let value_js: JsNumber = *cx.argument(0)?;
-        let value: f32 = value_js.value(&mut cx) as f32;
+        let value = value_js.value(&mut cx) as f32;
 
         Self::unpack_track(&mut cx, |cx, track| {
             track.panning.set(value);
@@ -61,7 +61,7 @@ impl JsTrack {
 
     fn set_volume(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
         let value_js: JsNumber = *cx.argument(0)?;
-        let value: f32 = value_js.value(&mut cx) as f32;
+        let value = value_js.value(&mut cx) as f32;
 
         Self::unpack_track(&mut cx, |cx, track| {
             track.volume.set(value);

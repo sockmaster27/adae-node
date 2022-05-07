@@ -13,6 +13,8 @@ declare module "ardae-js" {
 
         addTrack(): Track
 
+        getTrack(key: number): Track
+
         /**
          * Closes the engine down gracefully.
          * After this is called all other functions will throw an `Error`.
