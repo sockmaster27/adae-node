@@ -5,46 +5,21 @@ mod shared_engine;
 use neon::prelude::*;
 
 use encapsulator::{encapsulate, prevent_gc, unpack, Method};
-use mixer_track::JsTrack;
 use shared_engine::SharedEngine;
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
-    cx.export_function("Engine", JsEngine::constructor)?;
+    cx.export_function("Engine", constructor)?;
     Ok(())
 }
 
-/// A wrapper around the `ardae::Engine` compatible with Neon's API.
-///
-/// Note that even though its functions are organized as being associated to the `JsEngine`,
-/// most of them are supposed to be exposed directly by Neon, and do not follow rust conventions.
-struct JsEngine {
-    engine: SharedEngine,
-}
-impl JsEngine {
-    /// The returned object must adhere to the interface defined in the `index.d.ts` file.
-    fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
-        let engine = SharedEngine::new();
-
-        let js_engine = JsEngine { engine };
-        let tracks = Self::construct_tracks(&mut cx, &js_engine)?;
-
-        let properties = &[("tracks", tracks)];
-        let methods: &[(&str, Method)] = &[
-            ("addTrack", Self::add_track),
-            ("getTrack", Self::get_track),
-            ("close", Self::close),
-        ];
-        let object = encapsulate(&mut cx, js_engine, properties, methods)?;
-        prevent_gc(&mut cx, object)?;
-        Ok(object)
-    }
-
+/// The returned object must adhere to the interface defined in the `index.d.ts` file.
+fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
     fn construct_tracks<'a>(
         cx: &mut FunctionContext<'a>,
-        js_engine: &JsEngine,
+        engine: &SharedEngine,
     ) -> JsResult<'a, JsValue> {
-        let track_keys = js_engine.engine.unpack(cx, |_cx, engine| {
+        let track_keys = engine.unpack(cx, |_cx, engine| {
             let tracks = engine.tracks();
             let track_keys: Vec<u32> = tracks.iter().map(|track| track.key()).collect();
             Ok(track_keys)
@@ -52,25 +27,35 @@ impl JsEngine {
 
         let js_tracks = JsArray::new(cx, track_keys.len() as u32);
         for (i, &key) in track_keys.iter().enumerate() {
-            let js_track = JsTrack::construct(cx, key, SharedEngine::clone(&js_engine.engine))?;
+            let js_track = mixer_track::construct(cx, key, SharedEngine::clone(engine))?;
             js_tracks.set(cx, i as u32, js_track)?;
         }
         Ok(js_tracks.as_value(cx))
     }
 
-    fn get_track(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
+    let engine = SharedEngine::new();
+    let tracks = construct_tracks(&mut cx, &engine)?;
+
+    let properties = &[("tracks", tracks)];
+    let object = encapsulate(&mut cx, engine, properties, METHODS)?;
+    prevent_gc(&mut cx, object)?;
+    Ok(object)
+}
+
+// Closures are used to put declarations inside list, but they should be coerced to fns.
+const METHODS: &[(&str, Method)] = &[
+    ("getTrack", |mut cx| {
         let key_js: JsNumber = *cx.argument(0)?;
         let key = key_js.value(&mut cx) as u32;
 
-        unpack(&mut cx, |cx, js_engine: &JsEngine| {
-            let track = JsTrack::construct(cx, key, SharedEngine::clone(&js_engine.engine))?;
+        unpack(&mut cx, |cx, engine: &SharedEngine| {
+            let track = mixer_track::construct(cx, key, SharedEngine::clone(engine))?;
             Ok(track.as_value(cx))
         })
-    }
-
-    fn add_track(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
-        let js_track = unpack(&mut cx, |cx, js_engine: &JsEngine| {
-            let key = js_engine.engine.unpack(cx, |cx, engine| {
+    }),
+    ("addTrack", |mut cx| {
+        let js_track = unpack(&mut cx, |cx, engine: &SharedEngine| {
+            let key = engine.unpack(cx, |cx, engine| {
                 let result = engine.add_track();
                 match result {
                     Ok(track) => Ok(track.key()),
@@ -78,7 +63,7 @@ impl JsEngine {
                 }
             })?;
 
-            JsTrack::construct(cx, key, SharedEngine::clone(&js_engine.engine))
+            mixer_track::construct(cx, key, SharedEngine::clone(engine))
         })?;
 
         let object = cx.this();
@@ -87,16 +72,12 @@ impl JsEngine {
         tracks.set(&mut cx, end, js_track)?;
 
         Ok(js_track.as_value(&mut cx))
-    }
-
-    fn close(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
-        unpack(&mut cx, |cx, js_engine: &JsEngine| {
-            js_engine.engine.close(cx)?;
+    }),
+    ("close", |mut cx| {
+        unpack(&mut cx, |cx, engine: &SharedEngine| {
+            engine.close(cx)?;
 
             Ok(cx.undefined().as_value(cx))
         })
-    }
-}
-
-// This just has to be here.
-impl Finalize for JsEngine {}
+    }),
+];

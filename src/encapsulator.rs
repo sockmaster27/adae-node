@@ -1,8 +1,8 @@
 use neon::{prelude::*, result::Throw};
 
-/// Property name of the rust struct on the JS-object.
+/// Property name of the rust struct on the JS-object resulting from [`encapsulate`].
 const DATA_KEY: &str = "data";
-/// Property name of the [`Root`] on the JS-object, if [`encapsulate`] is called with `prevent_gc` set to `true`.
+/// Property name of the [`Root`] on the JS-object having gone through [`prevent_gc`].
 const ROOT_KEY: &str = "root";
 
 pub type Method = fn(MethodContext<JsObject>) -> JsResult<JsValue>;

@@ -5,72 +5,61 @@ use crate::{
     shared_engine::SharedEngine,
 };
 
-pub struct JsTrack {
+/// The returned object must adhere to the interface defined in the `index.d.ts` file.
+pub fn construct<'a>(
+    cx: &mut FunctionContext<'a>,
     key: u32,
     engine: SharedEngine,
+) -> JsResult<'a, JsObject> {
+    let properties = &[("key", cx.number(key).as_value(cx))];
+    let object = encapsulate(cx, engine, properties, METHODS)?;
+
+    Ok(object)
 }
-impl JsTrack {
-    /// The returned object must adhere to the interface defined in the `index.d.ts` file.
-    pub fn construct<'a>(
-        cx: &mut FunctionContext<'a>,
-        key: u32,
-        engine: SharedEngine,
-    ) -> JsResult<'a, JsObject> {
-        let js_track = JsTrack { key, engine };
-        let properties = &[("key", cx.number(key).as_value(cx))];
-        let methods: &[(&str, Method)] = &[
-            ("setPanning", Self::set_panning),
-            ("setVolume", Self::set_volume),
-            ("readMeter", Self::read_meter),
-            ("delete", Self::delete),
-        ];
-        let object = encapsulate(cx, js_track, properties, methods)?;
 
-        Ok(object)
-    }
+/// Fetch the track from the engine.
+fn unpack_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> Result<R, Throw>
+where
+    F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::MixerTrack) -> Result<R, Throw>,
+{
+    let handle = cx.this().get(cx, "key")?;
+    let key_js: JsNumber = *handle.downcast_or_throw(cx)?;
+    let key = key_js.value(cx) as u32;
 
-    /// Fetch the track from the engine.
-    fn unpack_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> Result<R, Throw>
-    where
-        F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::MixerTrack) -> Result<R, Throw>,
-    {
-        unpack(cx, |cx, js_track: &JsTrack| {
-            let key = js_track.key;
-
-            js_track.engine.unpack(cx, |cx, engine| {
-                let track = match engine.track_mut(key) {
-                    Ok(track) => track,
-                    Err(_) => {
-                        return cx.throw_error("Invalid track key");
-                    }
-                };
-                callback(cx, track)
-            })
+    unpack(cx, |cx, engine: &SharedEngine| {
+        engine.unpack(cx, |cx, engine| {
+            let track = match engine.track_mut(key) {
+                Ok(track) => track,
+                Err(_) => {
+                    return cx.throw_error("Track has been deleted");
+                }
+            };
+            callback(cx, track)
         })
-    }
+    })
+}
 
-    fn set_panning(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
+const METHODS: &[(&str, Method)] = &[
+    ("setPanning", |mut cx| {
         let value_js: JsNumber = *cx.argument(0)?;
         let value = value_js.value(&mut cx) as f32;
 
-        Self::unpack_track(&mut cx, |cx, track| {
+        unpack_track(&mut cx, |cx, track| {
             track.panning.set(value);
             Ok(cx.undefined().as_value(cx))
         })
-    }
-
-    fn set_volume(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
+    }),
+    ("setVolume", |mut cx| {
         let value_js: JsNumber = *cx.argument(0)?;
         let value = value_js.value(&mut cx) as f32;
 
-        Self::unpack_track(&mut cx, |cx, track| {
+        unpack_track(&mut cx, |cx, track| {
             track.volume.set(value);
             Ok(cx.undefined().as_value(cx))
         })
-    }
-
-    fn read_meter(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
-        Self::unpack_track(&mut cx, |cx, track| {
+    }),
+    ("readMeter", |mut cx| {
+        unpack_track(&mut cx, |cx, track| {
             let [peak, long_peak, rms] = track.meter.read();
             let peak_js = cx.empty_array();
             let long_peak_js = cx.empty_array();
@@ -90,13 +79,14 @@ impl JsTrack {
             meter_js.set(cx, "rms", rms_js)?;
             Ok(meter_js.as_value(cx))
         })
-    }
+    }),
+    ("delete", |mut cx| {
+        let handle = cx.this().get(&mut cx, "key")?;
+        let key_js: JsNumber = *handle.downcast_or_throw(&mut cx)?;
+        let key = key_js.value(&mut cx) as u32;
 
-    fn delete(mut cx: MethodContext<JsObject>) -> JsResult<JsValue> {
-        unpack(&mut cx, |cx, js_track: &JsTrack| {
-            let key = js_track.key;
-
-            js_track.engine.unpack(cx, |cx, engine| {
+        unpack(&mut cx, |cx, engine: &SharedEngine| {
+            engine.unpack(cx, |cx, engine| {
                 let result = engine.delete_track(key);
                 if let Err(_) = result {
                     return cx.throw_error("Invalid track key");
@@ -104,7 +94,5 @@ impl JsTrack {
                 Ok(cx.undefined().as_value(cx))
             })
         })
-    }
-}
-
-impl Finalize for JsTrack {}
+    }),
+];

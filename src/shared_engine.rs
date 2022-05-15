@@ -3,11 +3,11 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use neon::{
     context::{CallContext, Context},
     result::Throw,
-    types::JsObject,
+    types::{Finalize, JsObject},
 };
 
 pub struct SharedEngine(
-    // Arc allows each JsTrack to also have a reference
+    // Arc allows each track to also have a reference
     // Mutex allows the value to be borrowed mutably from one place at a time
     // Option allows the engine to be dropped which stops audio
     Arc<Mutex<Option<ardae::Engine>>>,
@@ -57,3 +57,4 @@ impl Clone for SharedEngine {
         Self(Arc::clone(&self.0))
     }
 }
+impl Finalize for SharedEngine {}
