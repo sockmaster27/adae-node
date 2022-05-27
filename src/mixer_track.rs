@@ -24,8 +24,7 @@ fn unpack_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> Re
 where
     F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::MixerTrack) -> Result<R, Throw>,
 {
-    let handle = cx.this().get(cx, "key")?;
-    let key_js: JsNumber = *handle.downcast_or_throw(cx)?;
+    let key_js: Handle<JsNumber> = cx.this().get(cx, "key")?;
     let key = key_js.value(cx) as u32;
 
     unpack(cx, |cx, engine: &SharedEngine| {
@@ -43,7 +42,7 @@ where
 
 const METHODS: &[(&str, Method)] = &[
     ("setPanning", |mut cx| {
-        let value_js: JsNumber = *cx.argument(0)?;
+        let value_js: Handle<JsNumber> = cx.argument(0)?;
         let value = value_js.value(&mut cx) as f32;
 
         unpack_track(&mut cx, |cx, track| {
@@ -52,7 +51,7 @@ const METHODS: &[(&str, Method)] = &[
         })
     }),
     ("setVolume", |mut cx| {
-        let value_js: JsNumber = *cx.argument(0)?;
+        let value_js: Handle<JsNumber> = cx.argument(0)?;
         let value = value_js.value(&mut cx) as f32;
 
         unpack_track(&mut cx, |cx, track| {
@@ -85,8 +84,7 @@ const METHODS: &[(&str, Method)] = &[
     ("delete", |mut cx| {
         let err_msg = "Track has already been deleted";
 
-        let handle = cx.this().get(&mut cx, "key")?;
-        let key_js: JsNumber = *handle.downcast_or_throw(&mut cx)?;
+        let key_js: Handle<JsNumber> = cx.this().get(&mut cx, "key")?;
         let key = key_js.value(&mut cx) as u32;
 
         unpack(&mut cx, |cx, engine: &SharedEngine| {

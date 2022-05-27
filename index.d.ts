@@ -11,7 +11,8 @@ declare module "ardae-js" {
         /** Create and initialize new engine. */
         constructor()
 
-        /** Create new track.
+        /** 
+         * Create new track.
          * 
          * Can optionally take the `TrackData` returned by `Track.delete()` to reconstruct that track.
          */
@@ -19,7 +20,7 @@ declare module "ardae-js" {
 
         getTrack(key: number): Track
 
-        /**
+        /** 
          * Closes the engine down gracefully.
          * After this is called all other functions will throw an `Error`.
          */
@@ -43,7 +44,8 @@ declare module "ardae-js" {
         /** Get current peak, long term peak and RMS (Root Mean Square) levels, for each channel. */
         readMeter(): { peak: [number, number], longPeak: [number, number], rms: [number, number] }
 
-        /** Delete track.
+        /** 
+         * Delete track.
          * 
          * Returns data that can be passed to `Engine.addTrack()`, to reconstruct this track.
          */

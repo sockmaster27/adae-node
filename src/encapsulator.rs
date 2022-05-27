@@ -53,8 +53,7 @@ where
     D: 'static + Finalize + Send,
     F: FnOnce(&mut CallContext<'a, JsObject>, &D) -> Result<R, Throw>,
 {
-    let handle = cx.this().get(cx, DATA_KEY)?;
-    let boxed: JsBox<D> = *handle.downcast_or_throw(cx)?;
+    let boxed: Handle<JsBox<D>> = cx.this().get(cx, DATA_KEY)?;
     let data = &*boxed;
 
     callback(cx, data)

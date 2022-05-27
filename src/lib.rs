@@ -46,7 +46,7 @@ fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
 // Closures are used to put declarations inside list, but they should be coerced to fns.
 const METHODS: &[(&str, Method)] = &[
     ("getTrack", |mut cx| {
-        let key_js: JsNumber = *cx.argument(0)?;
+        let key_js: Handle<JsNumber> = cx.argument(0)?;
         let key = key_js.value(&mut cx) as u32;
 
         unpack(&mut cx, |cx, engine: &SharedEngine| {
@@ -71,8 +71,8 @@ const METHODS: &[(&str, Method)] = &[
                         .add_track()
                         .or_else(|e| cx.throw_error(format!("{}", e))),
                     Some(data_value) => {
-                        let boxed_data: JsBox<TrackDataWrapper> =
-                            *data_value.downcast_or_throw(cx)?;
+                        let boxed_data: Handle<JsBox<TrackDataWrapper>> =
+                            data_value.downcast_or_throw(cx)?;
                         let data = &**boxed_data;
                         engine
                             .reconstruct_track(data)
@@ -86,7 +86,8 @@ const METHODS: &[(&str, Method)] = &[
         })?;
 
         let object = cx.this();
-        let tracks: Handle<JsArray> = object.get(&mut cx, "tracks")?.downcast_or_throw(&mut cx)?;
+        let tracks: Handle<JsArray> = object.get(&mut cx, "tracks")?;
+
         let end = tracks.len(&mut cx);
         tracks.set(&mut cx, end, js_track)?;
 
