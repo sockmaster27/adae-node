@@ -6,8 +6,8 @@
     "types": "index.d.ts",
     "scripts": {
         "build": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
-        "build-debug": "npm run build --",
-        "build-record": "npm run build -- --features record_output",
+        "build-debug": "npm run build -- --features custom_debug_output",
+        "build-record": "npm run build-debug record_output",
         "build-release": "npm run build -- --release",
         "install": "npm run build-release",
         "test": "cargo test"

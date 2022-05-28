@@ -1,3 +1,7 @@
+#[macro_use]
+extern crate lazy_static;
+
+mod custom_output;
 mod encapsulator;
 mod mixer_track;
 mod shared_engine;
@@ -5,12 +9,19 @@ mod shared_engine;
 use mixer_track::TrackDataWrapper;
 use neon::prelude::*;
 
+use custom_output::get_debug;
+#[cfg(feature = "custom_debug_output")]
+use custom_output::output_debug;
 use encapsulator::{encapsulate, prevent_gc, unpack, Method};
 use shared_engine::SharedEngine;
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
+    #[cfg(feature = "custom_debug_output")]
+    ardae::set_output(output_debug);
+
     cx.export_function("Engine", constructor)?;
+    cx.export_function("getDebugOutput", get_debug)?;
     Ok(())
 }
 

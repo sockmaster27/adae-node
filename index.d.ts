@@ -53,4 +53,11 @@ declare module "ardae-js" {
     }
 
     type TrackData = unknown
+
+    /** 
+     * Await next debug print.
+     * 
+     * If package is built in release mode (default), this will never resolve.
+     */
+    function getDebugOutput(): Promise<string>
 }

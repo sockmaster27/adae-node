@@ -31,6 +31,7 @@ dependencies = [
  "atomicbox",
  "cpal",
  "hound",
+ "lazy_static",
  "ringbuf",
 ]
 
@@ -39,6 +40,7 @@ name = "ardae-js"
 version = "0.1.0"
 dependencies = [
  "ardae",
+ "lazy_static",
  "neon",
 ]
 

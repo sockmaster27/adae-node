@@ -11,11 +11,13 @@ crate-type = ["cdylib"]
 
 [dependencies]
 ardae = { path = "../ardae" }
+lazy_static = "1.4"
 
 [dependencies.neon]
 version = "0.10"
 default-features = false
-features = ["napi-latest", "promise-api"]
+features = ["napi-latest", "promise-api", "channel-api"]
 
 [features]
 record_output = ["ardae/record_output"]
+custom_debug_output = ["ardae/custom_debug_output"]
