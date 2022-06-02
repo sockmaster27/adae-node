@@ -22,7 +22,7 @@ pub fn construct<'a>(
 /// Fetch the track from the engine.
 fn unpack_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> Result<R, Throw>
 where
-    F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::MixerTrack) -> Result<R, Throw>,
+    F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::Track) -> Result<R, Throw>,
 {
     let key_js: Handle<JsNumber> = cx.this().get(cx, "key")?;
     let key = key_js.value(cx) as u32;
@@ -103,10 +103,10 @@ const METHODS: &[(&str, Method)] = &[
     }),
 ];
 
-/// Allow [`MixerTrackData`] to be boxed
-pub struct TrackDataWrapper(ardae::MixerTrackData);
+/// Allow [`TrackData`] to be boxed
+pub struct TrackDataWrapper(ardae::TrackData);
 impl Deref for TrackDataWrapper {
-    type Target = ardae::MixerTrackData;
+    type Target = ardae::TrackData;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
