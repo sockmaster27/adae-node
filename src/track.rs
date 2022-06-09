@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use neon::{prelude::*, result::Throw};
+use neon::prelude::*;
 
 use crate::{
     encapsulator::{encapsulate, unpack, Method},
@@ -20,15 +20,15 @@ pub fn construct<'a>(
 }
 
 /// Fetch the track from the engine.
-fn unpack_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> Result<R, Throw>
+fn unpack_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> NeonResult<R>
 where
-    F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::Track) -> Result<R, Throw>,
+    F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::Track) -> NeonResult<R>,
 {
     let key_js: Handle<JsNumber> = cx.this().get(cx, "key")?;
     let key = key_js.value(cx) as u32;
 
-    unpack(cx, |cx, engine: &SharedEngine| {
-        engine.unpack(cx, |cx, engine| {
+    unpack(cx, |cx, shared_engine: &SharedEngine| {
+        shared_engine.with_inner(cx, |cx, engine| {
             let track = match engine.track_mut(key) {
                 Ok(track) => track,
                 Err(_) => {
@@ -36,6 +36,27 @@ where
                 }
             };
             callback(cx, track)
+        })
+    })
+}
+
+pub fn delete_track<'a>(
+    cx: &mut MethodContext<'a, JsObject>,
+    key: u32,
+) -> JsResult<'a, JsBox<TrackDataWrapper>> {
+    unpack(cx, |cx, shared_engine: &SharedEngine| {
+        shared_engine.with_inner(cx, |cx, engine| {
+            let track = engine
+                .track(key)
+                .or_else(|e| cx.throw_error(format!("{}", &e)))?;
+            let data = TrackDataWrapper(track.data());
+            let boxed_data = cx.boxed(data);
+
+            engine
+                .delete_track(key)
+                .or_else(|e| cx.throw_error(format!("{}", &e)))?;
+
+            Ok(boxed_data)
         })
     })
 }
@@ -62,9 +83,9 @@ const METHODS: &[(&str, Method)] = &[
     ("readMeter", |mut cx| {
         unpack_track(&mut cx, |cx, track| {
             let [peak, long_peak, rms] = track.meter.read();
-            let peak_js = cx.empty_array();
-            let long_peak_js = cx.empty_array();
-            let rms_js = cx.empty_array();
+            let peak_js = JsArray::new(cx, 2);
+            let long_peak_js = JsArray::new(cx, 2);
+            let rms_js = JsArray::new(cx, 2);
 
             for (thing, thing_js) in [(peak, peak_js), (long_peak, long_peak_js), (rms, rms_js)] {
                 for (i, val) in thing.iter().enumerate() {
@@ -82,29 +103,16 @@ const METHODS: &[(&str, Method)] = &[
         })
     }),
     ("delete", |mut cx| {
-        let err_msg = "Track has already been deleted";
-
         let key_js: Handle<JsNumber> = cx.this().get(&mut cx, "key")?;
         let key = key_js.value(&mut cx) as u32;
-
-        unpack(&mut cx, |cx, engine: &SharedEngine| {
-            engine.unpack(cx, |cx, engine| {
-                let track = engine.track(key).or_else(|_| cx.throw_error(err_msg))?;
-                let data = TrackDataWrapper(track.data());
-                let boxed_data = cx.boxed(data);
-
-                engine
-                    .delete_track(key)
-                    .or_else(|_| cx.throw_error(err_msg))?;
-
-                Ok(boxed_data.as_value(cx))
-            })
-        })
+        let boxed_data = delete_track(&mut cx, key)?;
+        Ok(boxed_data.as_value(&mut cx))
     }),
 ];
 
 /// Allow [`TrackData`] to be boxed
-pub struct TrackDataWrapper(ardae::TrackData);
+#[derive(Clone)]
+pub struct TrackDataWrapper(pub ardae::TrackData);
 impl Deref for TrackDataWrapper {
     type Target = ardae::TrackData;
     fn deref(&self) -> &Self::Target {

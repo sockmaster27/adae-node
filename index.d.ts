@@ -12,11 +12,36 @@ declare module "ardae-js" {
         constructor()
 
         /** 
-         * Create new track.
+         * Create new track, and add it to the mixer.
          * 
          * Can optionally take the `TrackData` returned by `Track.delete()` to reconstruct that track.
          */
         addTrack(data?: TrackData): Track
+
+        /**
+         * Create new array of tracks, and add them to the mixer.
+         * 
+         * Can either take a count, or an array of `TrackData`, 
+         * which must all be unique, or the method will throw an `Error`.
+         */
+        addTracks(count: number): Track[]
+        addTracks(data: TrackData[]): Track[]
+
+        /**
+         * Delete track, and remove it from the mixer. 
+         * After this is done, calling any method on the track will throw an `Error`.
+         * 
+         * Returns data that can be passed to `Engine.addTrack/s()`, to reconstruct this track.
+         */
+        deleteTrack(track: Track): TrackData
+
+        /**
+         * Delete an array of tracks, and remove thme from the mixer. 
+         * After this is done, calling any method on the track will throw an `Error`.
+         * 
+         * Returns an array of data that can be passed to `Engine.addTrack/s()`, to reconstruct these tracks.
+         */
+        deleteTracks(tracks: Track[]): TrackData[]
 
         getTrack(key: number): Track
 
@@ -37,7 +62,6 @@ declare module "ardae-js" {
         getVolume(): number
         /**
          * Sets the output volume of the track.
-         * @param {number} value - Volume multiplier
          */
         setVolume(value: number): void
 
@@ -45,9 +69,12 @@ declare module "ardae-js" {
         readMeter(): { peak: [number, number], longPeak: [number, number], rms: [number, number] }
 
         /** 
-         * Delete track.
+         * Alias for `Engine.deleteTrack(this)`:
          * 
-         * Returns data that can be passed to `Engine.addTrack()`, to reconstruct this track.
+         * Delete track, and remove it from the mixer. 
+         * After this is done, calling any method on the track will throw an `Error`.
+         * 
+         * Returns data that can be passed to `Engine.addTrack/s()`, to reconstruct this track.
          */
         delete(): TrackData
     }

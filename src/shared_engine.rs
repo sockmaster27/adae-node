@@ -26,7 +26,7 @@ impl SharedEngine {
             .or_else(|_| cx.throw_error("A panick has ocurred while holding a lock on the engine."))
     }
 
-    pub fn unpack<'a, R, F>(
+    pub fn with_inner<'a, R, F>(
         &self,
         cx: &mut CallContext<'a, JsObject>,
         callback: F,
