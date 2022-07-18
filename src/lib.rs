@@ -24,6 +24,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     cx.export_function("Engine", constructor)?;
     cx.export_function("meterScale", meter_scale)?;
+    cx.export_function("inverseMeterScale", inverse_meter_scale)?;
     cx.export_function("getDebugOutput", get_debug)?;
     Ok(())
 }
@@ -201,6 +202,16 @@ fn meter_scale(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let value = value_js.value(&mut cx) as f32;
 
     let result = ardae::meter_scale(value);
+    let result_js = cx.number(result);
+
+    Ok(result_js)
+}
+
+fn inverse_meter_scale(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let value_js: Handle<JsNumber> = cx.argument(0)?;
+    let value = value_js.value(&mut cx) as f32;
+
+    let result = ardae::inverse_meter_scale(value);
     let result_js = cx.number(result);
 
     Ok(result_js)
