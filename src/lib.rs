@@ -23,6 +23,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     ardae::set_output(output_debug);
 
     cx.export_function("Engine", constructor)?;
+    cx.export_function("meterScale", meter_scale)?;
     cx.export_function("getDebugOutput", get_debug)?;
     Ok(())
 }
@@ -139,14 +140,21 @@ const METHODS: &[(&str, Method)] = &[
                     cx.throw_type_error("Argument not of type `number` or `TrackData[]`")
                 }?;
 
-                let tracks = JsArray::new(cx, keys.len() as u32);
+                let object = cx.this();
+                let tracks_array: Handle<JsArray> = object.get(cx, "tracks")?;
+                let mut tracks_array_end = tracks_array.len(cx);
+
+                let new_tracks = JsArray::new(cx, keys.len() as u32);
                 for (i, &key) in keys.iter().enumerate() {
                     let track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
                     let index_js = cx.number(i as f64);
-                    tracks.set(cx, index_js, track)?;
+                    new_tracks.set(cx, index_js, track)?;
+
+                    tracks_array.set(cx, tracks_array_end, track)?;
+                    tracks_array_end += 1;
                 }
 
-                Ok(tracks.as_value(cx))
+                Ok(new_tracks.as_value(cx))
             })
         })
     }),
@@ -199,3 +207,13 @@ const METHODS: &[(&str, Method)] = &[
         })
     }),
 ];
+
+fn meter_scale(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let value_js: Handle<JsNumber> = cx.argument(0)?;
+    let value = value_js.value(&mut cx) as f32;
+
+    let result = ardae::meter_scale(value);
+    let result_js = cx.number(result);
+
+    Ok(result_js)
+}

@@ -62,13 +62,27 @@ pub fn delete_track<'a>(
 }
 
 const METHODS: &[(&str, Method)] = &[
+    ("getPanning", |mut cx| {
+        unpack_track(&mut cx, |cx, track| {
+            let panning = track.panning();
+            let panning_js = cx.number(panning);
+            Ok(panning_js.as_value(cx))
+        })
+    }),
     ("setPanning", |mut cx| {
         let value_js: Handle<JsNumber> = cx.argument(0)?;
         let value = value_js.value(&mut cx) as f32;
 
         unpack_track(&mut cx, |cx, track| {
-            track.panning.set(value);
+            track.set_panning(value);
             Ok(cx.undefined().as_value(cx))
+        })
+    }),
+    ("getVolume", |mut cx| {
+        unpack_track(&mut cx, |cx, track| {
+            let volume = track.volume();
+            let volume_js = cx.number(volume);
+            Ok(volume_js.as_value(cx))
         })
     }),
     ("setVolume", |mut cx| {
@@ -76,13 +90,13 @@ const METHODS: &[(&str, Method)] = &[
         let value = value_js.value(&mut cx) as f32;
 
         unpack_track(&mut cx, |cx, track| {
-            track.volume.set(value);
+            track.set_volume(value);
             Ok(cx.undefined().as_value(cx))
         })
     }),
     ("readMeter", |mut cx| {
         unpack_track(&mut cx, |cx, track| {
-            let [peak, long_peak, rms] = track.meter.read();
+            let [peak, long_peak, rms] = track.read_meter();
             let peak_js = JsArray::new(cx, 2);
             let long_peak_js = JsArray::new(cx, 2);
             let rms_js = JsArray::new(cx, 2);
@@ -100,6 +114,12 @@ const METHODS: &[(&str, Method)] = &[
             meter_js.set(cx, "longPeak", long_peak_js)?;
             meter_js.set(cx, "rms", rms_js)?;
             Ok(meter_js.as_value(cx))
+        })
+    }),
+    ("snapMeter", |mut cx| {
+        unpack_track(&mut cx, |cx, track| {
+            track.snap_rms();
+            Ok(cx.undefined().as_value(cx))
         })
     }),
     ("delete", |mut cx| {

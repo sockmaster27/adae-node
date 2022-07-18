@@ -37,7 +37,7 @@ declare module "ardae-js" {
 
         /**
          * Delete an array of tracks, and remove thme from the mixer. 
-         * After this is done, calling any method on the track will throw an `Error`.
+         * After this is done, calling any method on these tracks will throw an `Error`.
          * 
          * Returns an array of data that can be passed to `Engine.addTrack/s()`, to reconstruct these tracks.
          */
@@ -65,8 +65,18 @@ declare module "ardae-js" {
          */
         setVolume(value: number): void
 
-        /** Get current peak, long term peak and RMS (Root Mean Square) levels, for each channel. */
+        /** 
+         * Get current peak, long term peak and RMS (Root Mean Square) levels, for each channel. 
+         * Values are scaled and smoothed.
+         */
         readMeter(): { peak: [number, number], longPeak: [number, number], rms: [number, number] }
+        /** 
+         * Cut off smoothing of RMS, and snap it to its current unsmoothed value.
+         * 
+         * Should be called before `readMeter()` is called the first time or after a long break,
+         * to avoid meter sliding in place from zero or a very old value.
+         */
+        snapMeter(): void
 
         /** 
          * Alias for `Engine.deleteTrack(this)`:
@@ -80,6 +90,19 @@ declare module "ardae-js" {
     }
 
     type TrackData = unknown
+
+    /**
+     * Scaling function used by Track.readMeter().
+     * 
+     * Read only.
+     */
+    function meterScale(value: number): number
+    /**
+     * Inverse of scaling used by Track.readMeter().
+     * 
+     * Useful for volume slider in proximity to a meter.
+     */
+    function inverseMeterScale(value: number): number
 
     /** 
      * Await next debug print.
