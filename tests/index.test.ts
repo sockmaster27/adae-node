@@ -139,4 +139,84 @@ describe("Track addition and deletion", () => {
                 containsEqualTrack(before, track)
             ).toBe(true);
     });
+
+    test("All methods throw when engine is closed", () => {
+        engine.close();
+        const methods = [
+            "getTracks",
+            "getTrack",
+            "addTrack",
+            "addTracks",
+            "deleteTrack",
+            "deleteTracks",
+            "close",
+        ];
+
+        for (const method of methods)
+            expect(engine[method]).toThrowError();
+
+        // So cleanup can run
+        engine = new Engine();
+    });
+});
+
+
+describe("Individual track", () => {
+    let track: any;
+    beforeEach(() => track = engine.addTrack());
+
+    test("Has key", () => {
+        expect(typeof track.key).toBe("number");
+    });
+
+    test("getPanning() returns what's passed to setPanning()", () => {
+        track.setPanning(0.5);
+        expect(track.getPanning()).toBe(0.5);
+    });
+
+    test("getVolume() returns what's passed to setVolume()", () => {
+        track.setVolume(0.5);
+        expect(track.getVolume()).toBe(0.5);
+    });
+
+    test("readMeter() returns right type", () => {
+        const result = track.readMeter();
+
+        expect(typeof result).toBe("object");
+
+        expect(
+            Object.getOwnPropertyNames(result)
+        ).toStrictEqual(["peak", "longPeak", "rms"]);
+
+        for (const stat of Object.values(result))
+            expect((stat as any[]).length).toBe(2);
+
+        for (const number of Object.values(result).flat())
+            expect(typeof number).toBe("number");
+    });
+
+    test("snapMeter() exists", () => {
+        expect(typeof track.snapMeter).toBe("function");
+    });
+
+    test("delete() deletes track", () => {
+        track.delete();
+        expect(() => engine.getTrack(track.key)).toThrowError();
+    });
+
+    test("All methods throw when track is deleted", () => {
+        track.delete();
+        const methods = [
+            "getPanning",
+            "setPanning",
+            "getVolume",
+            "setVolume",
+            "readMeter",
+            "snapMeter",
+            "delete",
+        ];
+
+        for (const method of methods)
+            expect(track[method]).toThrowError();
+    });
 });
