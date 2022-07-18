@@ -10,7 +10,10 @@
         "build-record": "npm run build-debug record_output",
         "build-release": "npm run build -- --release",
         "install": "npm run build-release",
-        "test": "concurrently \"cargo test\" \"npm:build-debug\" && jest"
+        "test": "concurrently \"cargo test\" \"npm:build-debug\"  \"tsc --project ./tests/tsconfig.json\" && jest"
+    },
+    "jest": {
+        "testRegex": "test.js$"
     },
     "author": "",
     "license": "ISC",
@@ -18,7 +21,8 @@
         "@types/jest": "^28.1.6",
         "@types/node": "^18.0.5",
         "cargo-cp-artifact": "^0.1.6",
+        "concurrently": "^6.5.1",
         "jest": "^28.1.3",
-        "concurrently": "^6.5.1"
+        "typescript": "^4.7.4"
     }
 }

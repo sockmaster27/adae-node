@@ -30,35 +30,29 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
 /// The returned object must adhere to the interface defined in the `index.d.ts` file.
 fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
-    fn construct_tracks<'a>(
-        cx: &mut FunctionContext<'a>,
-        shared_engine: &SharedEngine,
-    ) -> JsResult<'a, JsValue> {
-        let track_keys = shared_engine.with_inner(cx, |_cx, engine| {
-            let tracks = engine.tracks();
-            let track_keys: Vec<u32> = tracks.iter().map(|track| track.key()).collect();
-            Ok(track_keys)
-        })?;
-
-        let js_tracks = JsArray::new(cx, track_keys.len() as u32);
-        for (i, &key) in track_keys.iter().enumerate() {
-            let js_track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
-            js_tracks.set(cx, i as u32, js_track)?;
-        }
-        Ok(js_tracks.as_value(cx))
-    }
-
     let shared_engine = SharedEngine::new();
-    let tracks = construct_tracks(&mut cx, &shared_engine)?;
-
-    let properties = &[("tracks", tracks)];
-    let object = encapsulate(&mut cx, shared_engine, properties, METHODS)?;
+    let object = encapsulate(&mut cx, shared_engine, &[], METHODS)?;
     prevent_gc(&mut cx, object)?;
     Ok(object)
 }
 
 // Closures are used to put declarations inside list, but they should be coerced to fns.
 const METHODS: &[(&str, Method)] = &[
+    ("getTracks", |mut cx| {
+        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.with_inner(cx, |cx, engine| {
+                let tracks = engine.tracks();
+                let track_keys = tracks.iter().map(|track| track.key());
+
+                let js_tracks = JsArray::new(cx, track_keys.len() as u32);
+                for (i, key) in track_keys.enumerate() {
+                    let js_track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
+                    js_tracks.set(cx, i as u32, js_track)?;
+                }
+                Ok(js_tracks.as_value(cx))
+            })
+        })
+    }),
     ("getTrack", |mut cx| {
         let key_js: Handle<JsNumber> = cx.argument(0)?;
         let key = key_js.value(&mut cx) as u32;
@@ -78,7 +72,7 @@ const METHODS: &[(&str, Method)] = &[
             }
         }
 
-        let js_track = unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
+        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
             let key = shared_engine.with_inner(cx, |cx, engine| {
                 let key = match data_option {
                     None => engine
@@ -96,16 +90,10 @@ const METHODS: &[(&str, Method)] = &[
                 Ok(key)
             })?;
 
-            track::construct(cx, key, SharedEngine::clone(shared_engine))
-        })?;
+            let js_track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
 
-        let object = cx.this();
-        let tracks: Handle<JsArray> = object.get(&mut cx, "tracks")?;
-
-        let end = tracks.len(&mut cx);
-        tracks.set(&mut cx, end, js_track)?;
-
-        Ok(js_track.as_value(&mut cx))
+            Ok(js_track.as_value(cx))
+        })
     }),
     ("addTracks", |mut cx| {
         // Determine which overload is used
@@ -140,18 +128,11 @@ const METHODS: &[(&str, Method)] = &[
                     cx.throw_type_error("Argument not of type `number` or `TrackData[]`")
                 }?;
 
-                let object = cx.this();
-                let tracks_array: Handle<JsArray> = object.get(cx, "tracks")?;
-                let mut tracks_array_end = tracks_array.len(cx);
-
                 let new_tracks = JsArray::new(cx, keys.len() as u32);
                 for (i, &key) in keys.iter().enumerate() {
                     let track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
                     let index_js = cx.number(i as f64);
                     new_tracks.set(cx, index_js, track)?;
-
-                    tracks_array.set(cx, tracks_array_end, track)?;
-                    tracks_array_end += 1;
                 }
 
                 Ok(new_tracks.as_value(cx))

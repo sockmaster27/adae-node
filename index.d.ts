@@ -6,10 +6,15 @@ declare module "ardae-js" {
         /** Prevents the object from being prematurely garbage collected. See `Engine.close()`. */
         private root: unknown
 
-        readonly tracks: Track[]
-
         /** Create and initialize new engine. */
         constructor()
+ 
+        /**
+         * Get all tracks currently on the mixer.
+         */
+        getTracks(): Track[]
+
+        getTrack(key: number): Track
 
         /** 
          * Create new track, and add it to the mixer.
@@ -42,8 +47,6 @@ declare module "ardae-js" {
          * Returns an array of data that can be passed to `Engine.addTrack/s()`, to reconstruct these tracks.
          */
         deleteTracks(tracks: Track[]): TrackData[]
-
-        getTrack(key: number): Track
 
         /** 
          * Closes the engine down gracefully.
