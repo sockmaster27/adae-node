@@ -58,8 +58,15 @@ const METHODS: &[(&str, Method)] = &[
         let key = key_js.value(&mut cx) as u32;
 
         unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
-            let track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
-            Ok(track.as_value(cx))
+            shared_engine.with_inner(cx, |cx, engine| {
+                // Check if track exists
+                engine
+                    .track(key)
+                    .or_else(|e| cx.throw_error(format!("{}", e)))?;
+
+                let track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
+                Ok(track.as_value(cx))
+            })
         })
     }),
     ("addTrack", |mut cx| {

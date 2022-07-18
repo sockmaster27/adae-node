@@ -55,7 +55,15 @@ describe("Track addition and deletion", () => {
     test("Get track from key fails when track is deleted", () => {
         const track = engine.addTrack();
         engine.deleteTrack(track);
-        expect(engine.getTrack(track.key)).toThrowError();
+        expect(() => engine.getTrack(track.key)).toThrowError();
+    });
+
+    test("Get track from key after reconstruction", () => {
+        const track = engine.addTrack();
+        const data = engine.deleteTrack(track);
+        engine.addTrack(data);
+        const gottenTrack = engine.getTrack(track.key);
+        expect(tracksEqual(track, gottenTrack)).toStrictEqual([true, null]);
     });
 
     test("Add single track", () => {
