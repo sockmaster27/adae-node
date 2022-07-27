@@ -45,7 +45,12 @@ const METHODS: &[(&str, Method)] = &[
                 let tracks = engine.tracks();
                 let track_keys = tracks.iter().map(|track| track.key());
 
-                let js_tracks = JsArray::new(cx, track_keys.len() as u32);
+                let length = track_keys
+                    .len()
+                    .try_into()
+                    .or_else(|_| cx.throw_error("Too many tracks to fit into array"))?;
+                let js_tracks = JsArray::new(cx, length);
+
                 for (i, key) in track_keys.enumerate() {
                     let js_track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
                     js_tracks.set(cx, i as u32, js_track)?;
@@ -136,7 +141,11 @@ const METHODS: &[(&str, Method)] = &[
                     cx.throw_type_error("Argument not of type `number` or `TrackData[]`")
                 }?;
 
-                let new_tracks = JsArray::new(cx, keys.len() as u32);
+                let length = keys
+                    .len()
+                    .try_into()
+                    .or_else(|_| cx.throw_error("Too many tracks to fit into array"))?;
+                let new_tracks = JsArray::new(cx, length);
                 for (i, &key) in keys.iter().enumerate() {
                     let track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
                     let index_js = cx.number(i as f64);
@@ -168,7 +177,12 @@ const METHODS: &[(&str, Method)] = &[
 
         unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
-                let data_array = JsArray::new(cx, keys.len() as u32);
+                let length = keys
+                    .len()
+                    .try_into()
+                    .or_else(|_| cx.throw_error("Too many tracks to fit into array"))?;
+                let data_array = JsArray::new(cx, length);
+
                 for (i, &key) in keys.iter().enumerate() {
                     let track = engine
                         .track(key)
