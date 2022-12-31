@@ -2,6 +2,7 @@ mod encapsulator;
 mod mixer_track;
 mod shared_engine;
 
+use mixer_track::TrackDataWrapper;
 use neon::prelude::*;
 
 use encapsulator::{encapsulate, prevent_gc, unpack, Method};
@@ -54,13 +55,31 @@ const METHODS: &[(&str, Method)] = &[
         })
     }),
     ("addTrack", |mut cx| {
+        let mut data_option = cx.argument_opt(0);
+        if let Some(data) = data_option {
+            let is_undefined = data.is_a::<JsUndefined, _>(&mut cx);
+            let is_null = data.is_a::<JsNull, _>(&mut cx);
+            if is_undefined || is_null {
+                data_option = None;
+            }
+        }
+
         let js_track = unpack(&mut cx, |cx, engine: &SharedEngine| {
             let key = engine.unpack(cx, |cx, engine| {
-                let result = engine.add_track();
-                match result {
-                    Ok(track) => Ok(track.key()),
-                    Err(_) => cx.throw_error("Max number of tracks reached"),
-                }
+                let track = match data_option {
+                    None => engine
+                        .add_track()
+                        .or_else(|e| cx.throw_error(format!("{}", e))),
+                    Some(data_value) => {
+                        let boxed_data: JsBox<TrackDataWrapper> =
+                            *data_value.downcast_or_throw(cx)?;
+                        let data = &**boxed_data;
+                        engine
+                            .reconstruct_track(data)
+                            .or_else(|e| cx.throw_error(format!("{}", e)))
+                    }
+                }?;
+                Ok(track.key())
             })?;
 
             mixer_track::construct(cx, key, SharedEngine::clone(engine))

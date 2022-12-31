@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use neon::{prelude::*, result::Throw};
 
 use crate::{
@@ -81,18 +83,34 @@ const METHODS: &[(&str, Method)] = &[
         })
     }),
     ("delete", |mut cx| {
+        let err_msg = "Track has already been deleted";
+
         let handle = cx.this().get(&mut cx, "key")?;
         let key_js: JsNumber = *handle.downcast_or_throw(&mut cx)?;
         let key = key_js.value(&mut cx) as u32;
 
         unpack(&mut cx, |cx, engine: &SharedEngine| {
             engine.unpack(cx, |cx, engine| {
-                let result = engine.delete_track(key);
-                if let Err(_) = result {
-                    return cx.throw_error("Invalid track key");
-                }
-                Ok(cx.undefined().as_value(cx))
+                let track = engine.track(key).or_else(|_| cx.throw_error(err_msg))?;
+                let data = TrackDataWrapper(track.data());
+                let boxed_data = cx.boxed(data);
+
+                engine
+                    .delete_track(key)
+                    .or_else(|_| cx.throw_error(err_msg))?;
+
+                Ok(boxed_data.as_value(cx))
             })
         })
     }),
 ];
+
+/// Allow [`MixerTrackData`] to be boxed
+pub struct TrackDataWrapper(ardae::MixerTrackData);
+impl Deref for TrackDataWrapper {
+    type Target = ardae::MixerTrackData;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl Finalize for TrackDataWrapper {}
