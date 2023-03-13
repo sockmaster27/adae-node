@@ -6,7 +6,11 @@ extern crate lazy_static;
 mod custom_output;
 mod encapsulator;
 mod shared_engine;
+mod timeline_track;
+mod timestamp;
 mod track;
+
+use std::path::Path;
 
 use neon::prelude::*;
 use track::{delete_track, TrackDataWrapper};
@@ -23,22 +27,45 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     ardae::set_output(output_debug);
 
     cx.export_function("Engine", constructor)?;
+
     cx.export_function("meterScale", meter_scale)?;
     cx.export_function("inverseMeterScale", inverse_meter_scale)?;
     cx.export_function("getDebugOutput", get_debug)?;
+
+    let timestamp_class = timestamp::class(&mut cx)?;
+    cx.export_value("Timestamp", timestamp_class)?;
+
     Ok(())
 }
 
 /// The returned object must adhere to the interface defined in the `index.d.ts` file.
 fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
     let shared_engine = SharedEngine::new();
-    let object = encapsulate(&mut cx, shared_engine, &[], METHODS)?;
+    let timeline_object = encapsulate(
+        &mut cx,
+        SharedEngine::clone(&shared_engine),
+        &[],
+        TIMELINE_METHODS,
+    )?
+    .as_value(&mut cx);
+    let object = encapsulate(
+        &mut cx,
+        shared_engine,
+        &[("timeline", timeline_object)],
+        METHODS,
+    )?;
     prevent_gc(&mut cx, object)?;
     Ok(object)
 }
 
 // Closures are used to put declarations inside list, but they should be coerced to fns.
 const METHODS: &[(&str, Method)] = &[
+    ("getMaster", |mut cx| {
+        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
+            let track = track::construct_master(cx, SharedEngine::clone(shared_engine))?;
+            Ok(track.as_value(cx))
+        })
+    }),
     ("getTracks", |mut cx| {
         unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
@@ -52,7 +79,8 @@ const METHODS: &[(&str, Method)] = &[
                 let js_tracks = JsArray::new(cx, length);
 
                 for (i, key) in track_keys.enumerate() {
-                    let js_track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
+                    let js_track =
+                        track::construct_track(cx, key, SharedEngine::clone(shared_engine))?;
                     js_tracks.set(cx, i as u32, js_track)?;
                 }
                 Ok(js_tracks.as_value(cx))
@@ -70,7 +98,7 @@ const METHODS: &[(&str, Method)] = &[
                     .track(key)
                     .or_else(|e| cx.throw_error(format!("{}", e)))?;
 
-                let track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
+                let track = track::construct_track(cx, key, SharedEngine::clone(shared_engine))?;
                 Ok(track.as_value(cx))
             })
         })
@@ -103,9 +131,31 @@ const METHODS: &[(&str, Method)] = &[
                 Ok(key)
             })?;
 
-            let js_track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
+            let js_track = track::construct_track(cx, key, SharedEngine::clone(shared_engine))?;
 
             Ok(js_track.as_value(cx))
+        })
+    }),
+    ("addAudioTrack", |mut cx| {
+        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.with_inner(cx, |cx, engine| {
+                let (tl_track_key, track_key) = engine
+                    .add_audio_track()
+                    .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
+
+                let tl_track_obj = timeline_track::construct(
+                    cx,
+                    tl_track_key,
+                    SharedEngine::clone(&shared_engine),
+                )?;
+                let track_obj =
+                    track::construct_track(cx, track_key, SharedEngine::clone(&shared_engine))?;
+
+                let res = JsArray::new(cx, 2);
+                res.set(cx, 0, tl_track_obj)?;
+                res.set(cx, 1, track_obj)?;
+                Ok(res.as_value(cx))
+            })
         })
     }),
     ("addTracks", |mut cx| {
@@ -147,7 +197,8 @@ const METHODS: &[(&str, Method)] = &[
                     .or_else(|_| cx.throw_error("Too many tracks to fit into array"))?;
                 let new_tracks = JsArray::new(cx, length);
                 for (i, &key) in keys.iter().enumerate() {
-                    let track = track::construct(cx, key, SharedEngine::clone(shared_engine))?;
+                    let track =
+                        track::construct_track(cx, key, SharedEngine::clone(shared_engine))?;
                     let index_js = cx.number(i as f64);
                     new_tracks.set(cx, index_js, track)?;
                 }
@@ -210,6 +261,22 @@ const METHODS: &[(&str, Method)] = &[
         })
     }),
 ];
+
+const TIMELINE_METHODS: &[(&str, Method)] = &[("importAudioClip", |mut cx| {
+    unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
+        shared_engine.with_inner(cx, |cx, engine| {
+            let path_js: Handle<JsString> = cx.argument(0)?;
+            let path = path_js.value(cx);
+
+            let clip_key = engine
+                .timeline_mut()
+                .import_audio_clip(&Path::new(&path))
+                .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
+
+            Ok(cx.number(clip_key).as_value(cx))
+        })
+    })
+})];
 
 fn meter_scale(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let value_js: Handle<JsNumber> = cx.argument(0)?;

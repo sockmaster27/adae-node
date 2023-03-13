@@ -23,7 +23,7 @@ impl SharedEngine {
     ) -> Result<MutexGuard<Option<ardae::Engine>>, Throw> {
         self.0
             .lock()
-            .or_else(|_| cx.throw_error("A panick has ocurred while holding a lock on the engine."))
+            .or_else(|_| cx.throw_error("A panic has ocurred while holding a lock on the engine."))
     }
 
     pub fn with_inner<'a, R, F>(

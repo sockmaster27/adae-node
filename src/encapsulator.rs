@@ -10,12 +10,16 @@ pub type Method = fn(MethodContext<JsObject>) -> JsResult<JsValue>;
 /// Encapsulate the `data` in a JavaScript object, with the given properties and methods exposed.
 ///
 /// To access this data again in the methods see [`unpack`].
-pub fn encapsulate<'a, D: 'static + Finalize + Send>(
-    cx: &mut FunctionContext<'a>,
+pub fn encapsulate<'a, C, D>(
+    cx: &mut C,
     data: D,
     properties: &[(&str, Handle<JsValue>)],
     methods: &'static [(&str, Method)],
-) -> JsResult<'a, JsObject> {
+) -> JsResult<'a, JsObject>
+where
+    C: Context<'a>,
+    D: 'static + Finalize + Send,
+{
     let object = cx.empty_object();
 
     // JsBox allows a rust value to be contained in a JS object.
@@ -48,10 +52,10 @@ pub fn prevent_gc(cx: &mut FunctionContext, object: Handle<JsObject>) -> Result<
 /// If the data is not of this type, a JavaScript exception is thrown.
 //
 // Would ideally return the data, but that doesn't appear to be possibly due to the nesting of references.
-pub fn unpack<'a, D, R, F>(cx: &mut CallContext<'a, JsObject>, callback: F) -> Result<R, Throw>
+pub fn unpack<'a, D, R, F>(cx: &mut MethodContext<'a, JsObject>, callback: F) -> Result<R, Throw>
 where
     D: 'static + Finalize + Send,
-    F: FnOnce(&mut CallContext<'a, JsObject>, &D) -> Result<R, Throw>,
+    F: FnOnce(&mut MethodContext<'a, JsObject>, &D) -> Result<R, Throw>,
 {
     let boxed: Handle<JsBox<D>> = cx.this().get(cx, DATA_KEY)?;
     let data = &*boxed;
