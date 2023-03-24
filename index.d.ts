@@ -2,7 +2,7 @@
 // It doesn't actually exist at runtime.
 
 declare module "ardae-js" {
-    class ExposedObject {
+    abstract class ExposedObject {
         /** The internal data and state of the engine. Do not touch. */
         private data: unknown
         /** Prevents the object from being prematurely garbage collected. See `Engine.close()`. */
@@ -67,9 +67,7 @@ declare module "ardae-js" {
         close(): void
     }
 
-    class MasterTrack extends ExposedObject {
-        private "#type": "MasterTrack"
-
+    abstract class StaticTrack extends ExposedObject {
         getPanning(): number
         setPanning(value: number): void
 
@@ -93,33 +91,15 @@ declare module "ardae-js" {
         snapMeter(): void
     }
 
-    class Track extends ExposedObject {
+    class MasterTrack extends StaticTrack {
+        private "#type": "MasterTrack"
+    }
+
+    class Track extends StaticTrack {
         private "#type": "Track"
 
         /** Unique identifier of the track. */
         readonly key: number
-
-        getPanning(): number
-        setPanning(value: number): void
-
-        getVolume(): number
-        /**
-         * Sets the output volume of the track.
-         */
-        setVolume(value: number): void
-
-        /** 
-         * Get current peak, long term peak and RMS (Root Mean Square) levels, for each channel. 
-         * Values are scaled and smoothed.
-         */
-        readMeter(): { peak: [number, number], longPeak: [number, number], rms: [number, number] }
-        /** 
-         * Cut off smoothing of RMS, and snap it to its current unsmoothed value.
-         * 
-         * Should be called before `readMeter()` is called the first time or after a long break,
-         * to avoid meter sliding in place from zero or a very old value.
-         */
-        snapMeter(): void
 
         /** 
          * Alias for `Engine.deleteTrack(this)`:
@@ -132,7 +112,11 @@ declare module "ardae-js" {
         delete(): TrackData
     }
 
-    class TrackData extends ExposedObject {
+    abstract class StaticTrackData extends ExposedObject { }
+    class MasterTrackData extends StaticTrackData {
+        private "#type": "MasterTrackData"
+    }
+    class TrackData extends StaticTrackData {
         private "#type": "TrackData"
     }
 
@@ -150,6 +134,8 @@ declare module "ardae-js" {
         readonly key: number
 
         addClip(clip: AudioClip, start: Timestamp, length?: Timestamp): void
+
+        delete(): void
     }
 
     class AudioClip extends ExposedObject {

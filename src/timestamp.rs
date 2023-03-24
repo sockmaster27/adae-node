@@ -2,7 +2,7 @@ use neon::prelude::*;
 
 use ardae::Timestamp;
 
-use crate::encapsulator::{encapsulate, unpack, Method};
+use crate::encapsulator::{self, encapsulate, Method};
 
 pub fn class<'a, C>(cx: &mut C) -> JsResult<'a, JsValue>
 where
@@ -27,7 +27,9 @@ pub fn timestamp<'a>(
     cx: &mut MethodContext<'a, JsObject>,
     obj: Handle<JsObject>,
 ) -> NeonResult<Timestamp> {
-    unpack(cx, |cx, timestamp: &TimestampWrapper| Ok(timestamp.0))
+    let boxed: Handle<JsBox<TimestampWrapper>> = obj.get(cx, encapsulator::DATA_KEY)?;
+    let wrapper = &*boxed;
+    Ok(wrapper.0)
 }
 
 struct TimestampWrapper(Timestamp);

@@ -6,11 +6,10 @@ extern crate lazy_static;
 mod custom_output;
 mod encapsulator;
 mod shared_engine;
+mod timeline;
 mod timeline_track;
 mod timestamp;
 mod track;
-
-use std::path::Path;
 
 use neon::prelude::*;
 use track::{delete_track, TrackDataWrapper};
@@ -41,13 +40,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 /// The returned object must adhere to the interface defined in the `index.d.ts` file.
 fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
     let shared_engine = SharedEngine::new();
-    let timeline_object = encapsulate(
-        &mut cx,
-        SharedEngine::clone(&shared_engine),
-        &[],
-        TIMELINE_METHODS,
-    )?
-    .as_value(&mut cx);
+    let timeline_object = timeline::construct(&mut cx, SharedEngine::clone(&shared_engine))?;
     let object = encapsulate(
         &mut cx,
         shared_engine,
@@ -261,22 +254,6 @@ const METHODS: &[(&str, Method)] = &[
         })
     }),
 ];
-
-const TIMELINE_METHODS: &[(&str, Method)] = &[("importAudioClip", |mut cx| {
-    unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
-        shared_engine.with_inner(cx, |cx, engine| {
-            let path_js: Handle<JsString> = cx.argument(0)?;
-            let path = path_js.value(cx);
-
-            let clip_key = engine
-                .timeline_mut()
-                .import_audio_clip(&Path::new(&path))
-                .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
-
-            Ok(cx.number(clip_key).as_value(cx))
-        })
-    })
-})];
 
 fn meter_scale(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let value_js: Handle<JsNumber> = cx.argument(0)?;

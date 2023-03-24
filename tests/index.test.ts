@@ -12,7 +12,7 @@ describe("Engine", () => {
     });
 
     // Common for timeline and mixer
-    function testTrackHandlingCommon(container: any, tracksEqual: (t1: any, t2: any) => [boolean, string]) {
+    function testTrackHandlingCommon(container: () => any, tracksEqual: (t1: any, t2: any) => [boolean, string]) {
 
         function containsEqualTrack(list: any[], track: any): boolean {
             for (const listTrack of list) {
@@ -23,98 +23,98 @@ describe("Engine", () => {
         }
 
         test("Has tracks", () => {
-            expect(container.getTracks()).toBeDefined();
+            expect(container().getTracks()).toBeDefined();
         });
 
         test("Get track from key", () => {
-            const track = container.addTrack();
-            const gottenTrack = container.getTrack(track.key);
+            const track = container().addTrack();
+            const gottenTrack = container().getTrack(track.key);
             expect(tracksEqual(track, gottenTrack)).toStrictEqual([true, null]);
         });
 
         test("Get track from key fails when track is deleted", () => {
-            const track = container.addTrack();
-            container.deleteTrack(track);
-            expect(() => container.getTrack(track.key)).toThrowError();
+            const track = container().addTrack();
+            container().deleteTrack(track);
+            expect(() => container().getTrack(track.key)).toThrowError();
         });
 
         test("Get track from key after reconstruction", () => {
-            const track = container.addTrack();
-            const data = container.deleteTrack(track);
-            container.addTrack(data);
-            const gottenTrack = container.getTrack(track.key);
+            const track = container().addTrack();
+            const data = container().deleteTrack(track);
+            container().addTrack(data);
+            const gottenTrack = container().getTrack(track.key);
             expect(tracksEqual(track, gottenTrack)).toStrictEqual([true, null]);
         });
 
         test("Add single track", () => {
-            const before = container.getTracks().length;
-            const newTrack = container.addTrack();
-            expect(container.getTracks().length).toBe(before + 1);
+            const before = container().getTracks().length;
+            const newTrack = container().addTrack();
+            expect(container().getTracks().length).toBe(before + 1);
             expect(
-                containsEqualTrack(container.getTracks(), newTrack)
+                containsEqualTrack(container().getTracks(), newTrack)
             ).toBe(true);
         });
 
         test("Add number of tracks", () => {
-            const before = container.getTracks().length;
-            const newTracks = container.addTracks(5);
-            expect(container.getTracks().length).toBe(before + 5);
+            const before = container().getTracks().length;
+            const newTracks = container().addTracks(5);
+            expect(container().getTracks().length).toBe(before + 5);
             for (const track of newTracks)
                 expect(
-                    containsEqualTrack(container.getTracks(), track)
+                    containsEqualTrack(container().getTracks(), track)
                 ).toBe(true);
 
         });
 
         test("Delete track", () => {
-            const before = container.getTracks();
-            const newTrack = container.addTrack();
-            container.deleteTrack(newTrack);
+            const before = container().getTracks();
+            const newTrack = container().addTrack();
+            container().deleteTrack(newTrack);
 
-            expect(container.getTracks().length).toBe(before.length);
+            expect(container().getTracks().length).toBe(before.length);
 
-            for (const track of container.getTracks())
+            for (const track of container().getTracks())
                 expect(
                     containsEqualTrack(before, track)
                 ).toBe(true);
         });
 
         test("Delete multiple tracks", () => {
-            const before = container.getTracks();
-            const newTracks = container.addTracks(34);
-            container.deleteTracks(newTracks);
+            const before = container().getTracks();
+            const newTracks = container().addTracks(34);
+            container().deleteTracks(newTracks);
 
-            expect(container.getTracks().length).toBe(before.length);
+            expect(container().getTracks().length).toBe(before.length);
 
-            for (const track of container.getTracks())
+            for (const track of container().getTracks())
                 expect(
                     containsEqualTrack(before, track)
                 ).toBe(true);
         });
 
         test("Reconstruct single track", () => {
-            const newTrack = container.addTrack();
-            const before = container.getTracks();
-            const data = container.deleteTrack(newTrack);
-            container.addTrack(data);
+            const newTrack = container().addTrack();
+            const before = container().getTracks();
+            const data = container().deleteTrack(newTrack);
+            container().addTrack(data);
 
-            expect(container.getTracks().length).toBe(before.length);
+            expect(container().getTracks().length).toBe(before.length);
 
-            for (const track of container.getTracks())
+            for (const track of container().getTracks())
                 expect(
                     containsEqualTrack(before, track)
                 ).toBe(true);
         });
 
         test("Reconstruct multiple tracks", () => {
-            const newTracks = container.addTracks(24);
-            const before = container.getTracks();
-            const data = container.deleteTracks(newTracks);
-            container.addTracks(data);
+            const newTracks = container().addTracks(24);
+            const before = container().getTracks();
+            const data = container().deleteTracks(newTracks);
+            container().addTracks(data);
 
-            expect(container.getTracks().length).toBe(before.length);
+            expect(container().getTracks().length).toBe(before.length);
 
-            for (const track of container.getTracks())
+            for (const track of container().getTracks())
                 expect(
                     containsEqualTrack(before, track)
                 ).toBe(true);
@@ -133,7 +133,7 @@ describe("Engine", () => {
             ];
 
             for (const method of methods)
-                expect(container[method]).toThrowError();
+                expect(container()[method]).toThrowError();
 
             // So cleanup can run
             engine = new Engine();
@@ -171,7 +171,7 @@ describe("Engine", () => {
                 ];
             }
 
-            testTrackHandlingCommon(engine, tracksEqual);
+            testTrackHandlingCommon(() => engine, tracksEqual);
         });
 
 
@@ -251,7 +251,7 @@ describe("Engine", () => {
 
     describe("Timeline", () => {
         test("Get timeline", () => {
-            expect(engine.getTimeline()).toBeDefined();
+            expect(engine.timeline).toBeDefined();
         });
 
         describe("Track addition and deletion", () => {
@@ -262,7 +262,7 @@ describe("Engine", () => {
                     return [true, null]
             }
 
-            testTrackHandlingCommon(engine.timeline, tracksEqual)
+            testTrackHandlingCommon(() => engine.timeline, tracksEqual)
         });
     });
 });

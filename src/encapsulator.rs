@@ -1,7 +1,7 @@
 use neon::{prelude::*, result::Throw};
 
 /// Property name of the rust struct on the JS-object resulting from [`encapsulate`].
-const DATA_KEY: &str = "data";
+pub const DATA_KEY: &str = "data";
 /// Property name of the [`Root`] on the JS-object having gone through [`prevent_gc`].
 const ROOT_KEY: &str = "root";
 
