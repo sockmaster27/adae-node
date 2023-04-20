@@ -5,14 +5,12 @@ declare module "ardae-js" {
     abstract class ExposedObject {
         /** The internal data and state of the engine. Do not touch. */
         private data: unknown
-        /** Prevents the object from being prematurely garbage collected. See `Engine.close()`. */
-        private root: unknown
+        /** Prevents the object from being prematurely garbage collected. */
+        private root?: unknown
     }
 
     class Engine extends ExposedObject {
-        private "#type": "Engine"
-
-        timeline: Timeline
+        #type: "Engine"
 
         /** Create and initialize new engine. */
         constructor()
@@ -22,52 +20,58 @@ declare module "ardae-js" {
         /**
          * Get all tracks currently on the mixer.
          */
-        getTracks(): Track[]
-
-        getTrack(key: number): Track
+        getAudioTracks(): AudioTrack[]
 
         /** 
-         * Create new track, and add it to the mixer.
-         * 
-         * Can optionally take the `TrackData` returned by `Track.delete()` to reconstruct that track.
+         * Create new audio track, and add it to the mixer.
          */
-        addTrack(data?: TrackData): Track
-
-        addAudioTrack(): [TimelineTrack, Track]
+        addAudioTrack(): AudioTrack
 
         /**
          * Create new array of tracks, and add them to the mixer.
-         * 
-         * Can either take a count, or an array of `TrackData`, 
-         * which must all be unique, or the method will throw an `Error`.
          */
-        addTracks(count: number): Track[]
-        addTracks(data: TrackData[]): Track[]
+        addAudioTracks(count: number): AudioTrack[]
 
         /**
-         * Delete track, and remove it from the mixer. 
+         * Delete audio track, and remove it from the mixer. 
          * After this is done, calling any method on the track will throw an `Error`.
          * 
-         * Returns data that can be passed to `Engine.addTrack/s()`, to reconstruct this track.
+         * Returns a state that can be passed to `Engine.reconstructAudioTrack/s()`, to reconstruct this track.
          */
-        deleteTrack(track: Track): TrackData
+        deleteAudioTrack(audioTrack: AudioTrack): AudioTrackState
 
         /**
-         * Delete an array of tracks, and remove thme from the mixer. 
+         * Delete an array of audio tracks, and remove thme from the mixer. 
          * After this is done, calling any method on these tracks will throw an `Error`.
          * 
-         * Returns an array of data that can be passed to `Engine.addTrack/s()`, to reconstruct these tracks.
+         * Returns an array of data that can be passed to `Engine.reconstructAudioTrack/s()`, to reconstruct these tracks.
          */
-        deleteTracks(tracks: Track[]): TrackData[]
+        deleteAudioTracks(audioTracks: AudioTrack[]): AudioTrackState[]
+
+        /**
+         * Reconstruct an audio track that has been deleted.
+         * 
+         * The state can be obtained by calling `AudioTrack.delete()` or `Engine.deleteAudioTrack/s()`.
+         */
+        reconstructAudioTrack(state: AudioTrackState): AudioTrack
+        /**
+         * Reconstruct an array of audio tracks that have been deleted.
+         * 
+         * The states can be obtained by calling `AudioTrack.delete()` or `Engine.deleteAudioTrack/s()`.
+         */
+        reconstructAudioTracks(states: AudioTrackState[]): AudioTrack[]
+
+
+        importAudioClip(path: string): AudioClip
 
         /** 
-         * Closes the engine down gracefully.
+         * Closes down the engine gracefully.
          * After this is called all other functions will throw an `Error`.
          */
         close(): void
     }
 
-    abstract class StaticTrack extends ExposedObject {
+    abstract class Track extends ExposedObject {
         getPanning(): number
         setPanning(value: number): void
 
@@ -91,60 +95,51 @@ declare module "ardae-js" {
         snapMeter(): void
     }
 
-    class MasterTrack extends StaticTrack {
-        private "#type": "MasterTrack"
+    class MasterTrack extends Track {
+        #type: "MasterTrack"
+        private constructor()
     }
 
-    class Track extends StaticTrack {
-        private "#type": "Track"
+    class AudioTrack extends Track {
+        #type: "AudioTrack"
+        private constructor()
 
         /** Unique identifier of the track. */
-        readonly key: number
+        key(): number
+
+
+        addClip(clip: AudioClip, start: Timestamp, length?: Timestamp): void
 
         /** 
-         * Alias for `Engine.deleteTrack(this)`:
+         * Alias for `Engine.deleteAudioTrack(this)`:
          * 
          * Delete track, and remove it from the mixer. 
          * After this is done, calling any method on the track will throw an `Error`.
          * 
-         * Returns data that can be passed to `Engine.addTrack/s()`, to reconstruct this track.
+         * Returns a state that can be passed to `Engine.reconstructAudioTrack/s()`, to reconstruct this track.
          */
-        delete(): TrackData
+        delete(): AudioTrackState
     }
 
-    abstract class StaticTrackData extends ExposedObject { }
-    class MasterTrackData extends StaticTrackData {
-        private "#type": "MasterTrackData"
+    abstract class TrackState extends ExposedObject { }
+    class MasterTrackState extends TrackState {
+        #type: "MasterTrackState"
+        private constructor()
     }
-    class TrackData extends StaticTrackData {
-        private "#type": "TrackData"
-    }
-
-    class Timeline extends ExposedObject {
-        private "#type": "Timeline"
-
-        getTracks(): TimelineTrack[]
-        getTrack(key: number): TimelineTrack
-
-        importAudioClip(path: string): AudioClip
-    }
-
-    class TimelineTrack extends ExposedObject {
-        private "#type": "TrackData"
-        readonly key: number
-
-        addClip(clip: AudioClip, start: Timestamp, length?: Timestamp): void
-
-        delete(): void
+    class AudioTrackState extends TrackState {
+        #type: "AudioTrackState"
+        private constructor()
     }
 
     class AudioClip extends ExposedObject {
-        private "#type": "AudioClip"
+        #type: "AudioClip"
+        private constructor()
         readonly key: number
     }
 
     class Timestamp extends ExposedObject {
-        private "#type": "Timestamp"
+        #type: "Timestamp"
+        private constructor()
 
         static zero(): Timestamp
         static fromBeatUnits(beatUnits: number): Timestamp

@@ -1,123 +1,231 @@
 use std::ops::Deref;
 
-use ardae::Track;
 use neon::prelude::*;
 
 use crate::{
-    encapsulator::{encapsulate, unpack, Method},
+    encapsulator::{encapsulate, unpack_this, Method},
     shared_engine::SharedEngine,
 };
 
-/// The returned object must adhere to the interface defined in the `index.d.ts` file.
-pub fn construct_master<'a>(
-    cx: &mut FunctionContext<'a>,
-    engine: SharedEngine,
-) -> JsResult<'a, JsObject> {
-    let object = encapsulate(cx, engine, &[], MASTER_METHODS)?;
-    Ok(object)
-}
+pub mod master {
+    use super::*;
 
-/// Fetch the master track from the engine.
-fn unpack_master<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> NeonResult<R>
-where
-    F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::Track) -> NeonResult<R>,
-{
-    unpack(cx, |cx, shared_engine: &SharedEngine| {
-        shared_engine.with_inner(cx, |cx, engine| callback(cx, engine.master_mut()))
-    })
-}
+    /// The returned object must adhere to the interface defined in the `index.d.ts` file.
+    pub fn construct<'a>(
+        cx: &mut FunctionContext<'a>,
+        engine: SharedEngine,
+    ) -> JsResult<'a, JsObject> {
+        let object = encapsulate(cx, engine, &[], METHODS)?;
+        Ok(object)
+    }
 
-/// The returned object must adhere to the interface defined in the `index.d.ts` file.
-pub fn construct_track<'a>(
-    cx: &mut FunctionContext<'a>,
-    key: u32,
-    engine: SharedEngine,
-) -> JsResult<'a, JsObject> {
-    let properties = &[("key", cx.number(key).as_value(cx))];
-    let object = encapsulate(cx, engine, properties, TRACK_METHODS)?;
-
-    Ok(object)
-}
-
-/// Fetch the track from the engine.
-fn unpack_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> NeonResult<R>
-where
-    F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::Track) -> NeonResult<R>,
-{
-    let key_js: Handle<JsNumber> = cx.this().get(cx, "key")?;
-    let key = key_js.value(cx) as u32;
-
-    unpack(cx, |cx, shared_engine: &SharedEngine| {
-        shared_engine.with_inner(cx, |cx, engine| {
-            let track = match engine.track_mut(key) {
-                Ok(track) => track,
-                Err(_) => {
-                    return cx.throw_error("Track has been deleted");
-                }
-            };
-            callback(cx, track)
+    /// Fetch the master track from the engine.
+    fn unpack_this_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> NeonResult<R>
+    where
+        F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::Track) -> NeonResult<R>,
+    {
+        unpack_this(cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.with_inner(cx, |cx, engine| callback(cx, engine.master_mut()))
         })
-    })
+    }
+
+    const METHODS: &[(&str, Method)] = &[
+        ("getPanning", |mut cx| {
+            unpack_this_track(&mut cx, get_panning)
+        }),
+        ("setPanning", |mut cx| {
+            unpack_this_track(&mut cx, set_panning)
+        }),
+        ("getVolume", |mut cx| unpack_this_track(&mut cx, get_volume)),
+        ("setVolume", |mut cx| unpack_this_track(&mut cx, set_volume)),
+        ("readMeter", |mut cx| unpack_this_track(&mut cx, read_meter)),
+        ("snapMeter", |mut cx| unpack_this_track(&mut cx, snap_meter)),
+    ];
 }
 
-pub fn delete_track<'a>(
-    cx: &mut MethodContext<'a, JsObject>,
-    key: u32,
-) -> JsResult<'a, JsBox<TrackDataWrapper>> {
-    unpack(cx, |cx, shared_engine: &SharedEngine| {
+pub mod audio_track {
+    use std::{
+        collections::hash_map::DefaultHasher,
+        hash::{Hash, Hasher},
+    };
+
+    use crate::encapsulator::unpack;
+
+    use super::*;
+
+    /// The returned object must adhere to the interface defined in the `index.d.ts` file.
+    pub fn construct<'a>(
+        cx: &mut FunctionContext<'a>,
+        audio_track: ardae::AudioTrack,
+        engine: SharedEngine,
+    ) -> JsResult<'a, JsObject> {
+        let object = encapsulate(cx, (engine, AudioTrackWrapper(audio_track)), &[], METHODS)?;
+
+        Ok(object)
+    }
+
+    pub fn unpack_audio_track<'a, C>(
+        cx: &mut C,
+        obj: Handle<'a, JsObject>,
+    ) -> NeonResult<ardae::AudioTrack>
+    where
+        C: Context<'a>,
+    {
+        let audio_track = unpack(cx, obj, |_cx, data: &(SharedEngine, AudioTrackWrapper)| {
+            let (_, audio_track) = data;
+            Ok(audio_track.0.clone())
+        })?;
+
+        Ok(audio_track)
+    }
+
+    fn unpack_this_audio_track<'a, F, R>(
+        cx: &mut CallContext<'a, JsObject>,
+        callback: F,
+    ) -> NeonResult<R>
+    where
+        F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::AudioTrack) -> NeonResult<R>,
+    {
+        let mut audio_track = unpack_this(cx, |_cx, data: &(SharedEngine, AudioTrackWrapper)| {
+            let (_, audio_track) = data;
+            Ok(audio_track.0.clone())
+        })?;
+
+        callback(cx, &mut audio_track)
+    }
+
+    fn unpack_this_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> NeonResult<R>
+    where
+        F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::Track) -> NeonResult<R>,
+    {
+        unpack_this(cx, |cx, data: &(SharedEngine, AudioTrackWrapper)| {
+            let (shared_engine, audio_track) = data;
+
+            shared_engine.with_inner(cx, |cx, engine| {
+                let track = match engine.track_mut(audio_track.track_key()) {
+                    Ok(track) => track,
+                    Err(_) => {
+                        return cx.throw_error("Audio track has been deleted");
+                    }
+                };
+                callback(cx, track)
+            })
+        })
+    }
+
+    pub fn delete<'a, C>(
+        cx: &mut C,
+        shared_engine: &SharedEngine,
+        audio_track: ardae::AudioTrack,
+    ) -> JsResult<'a, JsObject>
+    where
+        C: Context<'a>,
+    {
         shared_engine.with_inner(cx, |cx, engine| {
-            let track = engine
-                .track(key)
+            let state = engine
+                .audio_track_state(&audio_track)
                 .or_else(|e| cx.throw_error(format!("{}", &e)))?;
-            let data = TrackDataWrapper(track.data());
-            let boxed_data = cx.boxed(data);
 
             engine
-                .delete_track(key)
+                .delete_audio_track(audio_track.clone())
                 .or_else(|e| cx.throw_error(format!("{}", &e)))?;
 
-            Ok(boxed_data)
+            encapsulate(cx, AudioTrackStateWrapper(state), &[], &[])
         })
-    })
+    }
+
+    const METHODS: &[(&str, Method)] = &[
+        ("getPanning", |mut cx| {
+            unpack_this_track(&mut cx, get_panning)
+        }),
+        ("setPanning", |mut cx| {
+            unpack_this_track(&mut cx, set_panning)
+        }),
+        ("getVolume", |mut cx| unpack_this_track(&mut cx, get_volume)),
+        ("setVolume", |mut cx| unpack_this_track(&mut cx, set_volume)),
+        ("readMeter", |mut cx| unpack_this_track(&mut cx, read_meter)),
+        ("snapMeter", |mut cx| unpack_this_track(&mut cx, snap_meter)),
+        ("key", |mut cx| {
+            unpack_this_audio_track(&mut cx, |cx, audio_track| {
+                let mut s = DefaultHasher::new();
+                audio_track.hash(&mut s);
+                let key = s.finish();
+                Ok(cx.number(key as f64).as_value(cx))
+            })
+        }),
+        ("addClip", |mut _cx| todo!("addClip")),
+        ("delete", |mut cx| {
+            unpack_this(&mut cx, |cx, data: &(SharedEngine, AudioTrackWrapper)| {
+                let (shared_engine, audio_track) = data;
+
+                let boxed_state = delete(cx, shared_engine, audio_track.0.clone())?;
+                Ok(boxed_state.as_value(cx))
+            })
+        }),
+    ];
 }
 
-/// Allow [`TrackData`] to be boxed
-#[derive(Clone)]
-pub struct TrackDataWrapper(pub ardae::TrackData);
-impl Deref for TrackDataWrapper {
-    type Target = ardae::TrackData;
+#[derive(Clone, Debug)]
+pub struct AudioTrackWrapper(pub ardae::AudioTrack);
+impl Deref for AudioTrackWrapper {
+    type Target = ardae::AudioTrack;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
-impl Finalize for TrackDataWrapper {}
+impl Finalize for AudioTrackWrapper {}
+
+#[derive(Debug)]
+pub struct AudioTrackStateWrapper(pub ardae::AudioTrackState);
+impl Deref for AudioTrackStateWrapper {
+    type Target = ardae::AudioTrackState;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl Finalize for AudioTrackStateWrapper {}
 
 // Shared methods
-fn get_panning<'a>(cx: &mut CallContext<'a, JsObject>, track: &mut Track) -> JsResult<'a, JsValue> {
+fn get_panning<'a>(
+    cx: &mut CallContext<'a, JsObject>,
+    track: &mut ardae::Track,
+) -> JsResult<'a, JsValue> {
     let panning = track.panning();
     let panning_js = cx.number(panning);
     Ok(panning_js.as_value(cx))
 }
-fn set_panning<'a>(cx: &mut CallContext<'a, JsObject>, track: &mut Track) -> JsResult<'a, JsValue> {
+fn set_panning<'a>(
+    cx: &mut CallContext<'a, JsObject>,
+    track: &mut ardae::Track,
+) -> JsResult<'a, JsValue> {
     let value_js: Handle<JsNumber> = cx.argument(0)?;
     let value = value_js.value(cx) as f32;
 
     track.set_panning(value);
     Ok(cx.undefined().as_value(cx))
 }
-fn get_volume<'a>(cx: &mut CallContext<'a, JsObject>, track: &mut Track) -> JsResult<'a, JsValue> {
+fn get_volume<'a>(
+    cx: &mut CallContext<'a, JsObject>,
+    track: &mut ardae::Track,
+) -> JsResult<'a, JsValue> {
     let volume = track.volume();
     let volume_js = cx.number(volume);
     Ok(volume_js.as_value(cx))
 }
-fn set_volume<'a>(cx: &mut CallContext<'a, JsObject>, track: &mut Track) -> JsResult<'a, JsValue> {
+fn set_volume<'a>(
+    cx: &mut CallContext<'a, JsObject>,
+    track: &mut ardae::Track,
+) -> JsResult<'a, JsValue> {
     let value_js: Handle<JsNumber> = cx.argument(0)?;
     let value = value_js.value(cx) as f32;
 
     track.set_volume(value);
     Ok(cx.undefined().as_value(cx))
 }
-fn read_meter<'a>(cx: &mut CallContext<'a, JsObject>, track: &mut Track) -> JsResult<'a, JsValue> {
+fn read_meter<'a>(
+    cx: &mut CallContext<'a, JsObject>,
+    track: &mut ardae::Track,
+) -> JsResult<'a, JsValue> {
     let [peak, long_peak, rms] = track.read_meter();
     let peak_js = JsArray::new(cx, 2);
     let long_peak_js = JsArray::new(cx, 2);
@@ -137,31 +245,10 @@ fn read_meter<'a>(cx: &mut CallContext<'a, JsObject>, track: &mut Track) -> JsRe
     meter_js.set(cx, "rms", rms_js)?;
     Ok(meter_js.as_value(cx))
 }
-fn snap_meter<'a>(cx: &mut CallContext<'a, JsObject>, track: &mut Track) -> JsResult<'a, JsValue> {
+fn snap_meter<'a>(
+    cx: &mut CallContext<'a, JsObject>,
+    track: &mut ardae::Track,
+) -> JsResult<'a, JsValue> {
     track.snap_rms();
     Ok(cx.undefined().as_value(cx))
 }
-
-const MASTER_METHODS: &[(&str, Method)] = &[
-    ("getPanning", |mut cx| unpack_master(&mut cx, get_panning)),
-    ("setPanning", |mut cx| unpack_master(&mut cx, set_panning)),
-    ("getVolume", |mut cx| unpack_master(&mut cx, get_volume)),
-    ("setVolume", |mut cx| unpack_master(&mut cx, set_volume)),
-    ("readMeter", |mut cx| unpack_master(&mut cx, read_meter)),
-    ("snapMeter", |mut cx| unpack_master(&mut cx, snap_meter)),
-];
-
-const TRACK_METHODS: &[(&str, Method)] = &[
-    ("getPanning", |mut cx| unpack_track(&mut cx, get_panning)),
-    ("setPanning", |mut cx| unpack_track(&mut cx, set_panning)),
-    ("getVolume", |mut cx| unpack_track(&mut cx, get_volume)),
-    ("setVolume", |mut cx| unpack_track(&mut cx, set_volume)),
-    ("readMeter", |mut cx| unpack_track(&mut cx, read_meter)),
-    ("snapMeter", |mut cx| unpack_track(&mut cx, snap_meter)),
-    ("delete", |mut cx| {
-        let key_js: Handle<JsNumber> = cx.this().get(&mut cx, "key")?;
-        let key = key_js.value(&mut cx) as u32;
-        let boxed_data = delete_track(&mut cx, key)?;
-        Ok(boxed_data.as_value(&mut cx))
-    }),
-];

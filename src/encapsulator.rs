@@ -1,5 +1,7 @@
 use neon::{prelude::*, result::Throw};
 
+use std::fmt::Debug;
+
 /// Property name of the rust struct on the JS-object resulting from [`encapsulate`].
 pub const DATA_KEY: &str = "data";
 /// Property name of the [`Root`] on the JS-object having gone through [`prevent_gc`].
@@ -52,13 +54,25 @@ pub fn prevent_gc(cx: &mut FunctionContext, object: Handle<JsObject>) -> Result<
 /// If the data is not of this type, a JavaScript exception is thrown.
 //
 // Would ideally return the data, but that doesn't appear to be possibly due to the nesting of references.
-pub fn unpack<'a, D, R, F>(cx: &mut MethodContext<'a, JsObject>, callback: F) -> Result<R, Throw>
+pub fn unpack_this<'a, D, R, F>(cx: &mut MethodContext<'a, JsObject>, callback: F) -> NeonResult<R>
 where
     D: 'static + Finalize + Send,
     F: FnOnce(&mut MethodContext<'a, JsObject>, &D) -> Result<R, Throw>,
 {
     let boxed: Handle<JsBox<D>> = cx.this().get(cx, DATA_KEY)?;
-    let data = &*boxed;
+    let data = &**boxed;
+
+    callback(cx, data)
+}
+
+pub fn unpack<'a, C, D, F, R>(cx: &mut C, obj: Handle<'a, JsObject>, callback: F) -> NeonResult<R>
+where
+    C: Context<'a>,
+    D: 'static + Finalize + Send + Debug,
+    F: FnOnce(&mut C, &D) -> Result<R, Throw>,
+{
+    let boxed: Handle<JsBox<D>> = obj.get(cx, DATA_KEY)?;
+    let data = &**boxed;
 
     callback(cx, data)
 }

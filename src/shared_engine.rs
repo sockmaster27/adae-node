@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use neon::{
@@ -17,22 +18,19 @@ impl SharedEngine {
         Self(Arc::new(Mutex::new(Some(ardae::Engine::new()))))
     }
 
-    fn lock(
-        &self,
-        cx: &mut CallContext<JsObject>,
-    ) -> Result<MutexGuard<Option<ardae::Engine>>, Throw> {
+    fn lock<'a, C>(&self, cx: &mut C) -> Result<MutexGuard<Option<ardae::Engine>>, Throw>
+    where
+        C: Context<'a>,
+    {
         self.0
             .lock()
             .or_else(|_| cx.throw_error("A panic has ocurred while holding a lock on the engine."))
     }
 
-    pub fn with_inner<'a, R, F>(
-        &self,
-        cx: &mut CallContext<'a, JsObject>,
-        callback: F,
-    ) -> Result<R, Throw>
+    pub fn with_inner<'a, C, R, F>(&self, cx: &mut C, callback: F) -> Result<R, Throw>
     where
-        F: FnOnce(&mut CallContext<'a, JsObject>, &mut ardae::Engine) -> Result<R, Throw>,
+        C: Context<'a>,
+        F: FnOnce(&mut C, &mut ardae::Engine) -> Result<R, Throw>,
     {
         let mut option_guard = self.lock(cx)?;
         let engine = match *option_guard {
@@ -55,6 +53,11 @@ impl Clone for SharedEngine {
     /// Clones engine via Arc.
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
+    }
+}
+impl Debug for SharedEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SharedEngine").finish()
     }
 }
 impl Finalize for SharedEngine {}

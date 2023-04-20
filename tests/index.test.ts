@@ -11,144 +11,15 @@ describe("Engine", () => {
         engine.close();
     });
 
-    // Common for timeline and mixer
-    function testTrackHandlingCommon(container: () => any, tracksEqual: (t1: any, t2: any) => [boolean, string]) {
-
-        function containsEqualTrack(list: any[], track: any): boolean {
-            for (const listTrack of list) {
-                if (tracksEqual(listTrack, track))
-                    return true;
-            }
-            return false;
-        }
-
-        test("Has tracks", () => {
-            expect(container().getTracks()).toBeDefined();
-        });
-
-        test("Get track from key", () => {
-            const track = container().addTrack();
-            const gottenTrack = container().getTrack(track.key);
-            expect(tracksEqual(track, gottenTrack)).toStrictEqual([true, null]);
-        });
-
-        test("Get track from key fails when track is deleted", () => {
-            const track = container().addTrack();
-            container().deleteTrack(track);
-            expect(() => container().getTrack(track.key)).toThrowError();
-        });
-
-        test("Get track from key after reconstruction", () => {
-            const track = container().addTrack();
-            const data = container().deleteTrack(track);
-            container().addTrack(data);
-            const gottenTrack = container().getTrack(track.key);
-            expect(tracksEqual(track, gottenTrack)).toStrictEqual([true, null]);
-        });
-
-        test("Add single track", () => {
-            const before = container().getTracks().length;
-            const newTrack = container().addTrack();
-            expect(container().getTracks().length).toBe(before + 1);
-            expect(
-                containsEqualTrack(container().getTracks(), newTrack)
-            ).toBe(true);
-        });
-
-        test("Add number of tracks", () => {
-            const before = container().getTracks().length;
-            const newTracks = container().addTracks(5);
-            expect(container().getTracks().length).toBe(before + 5);
-            for (const track of newTracks)
-                expect(
-                    containsEqualTrack(container().getTracks(), track)
-                ).toBe(true);
-
-        });
-
-        test("Delete track", () => {
-            const before = container().getTracks();
-            const newTrack = container().addTrack();
-            container().deleteTrack(newTrack);
-
-            expect(container().getTracks().length).toBe(before.length);
-
-            for (const track of container().getTracks())
-                expect(
-                    containsEqualTrack(before, track)
-                ).toBe(true);
-        });
-
-        test("Delete multiple tracks", () => {
-            const before = container().getTracks();
-            const newTracks = container().addTracks(34);
-            container().deleteTracks(newTracks);
-
-            expect(container().getTracks().length).toBe(before.length);
-
-            for (const track of container().getTracks())
-                expect(
-                    containsEqualTrack(before, track)
-                ).toBe(true);
-        });
-
-        test("Reconstruct single track", () => {
-            const newTrack = container().addTrack();
-            const before = container().getTracks();
-            const data = container().deleteTrack(newTrack);
-            container().addTrack(data);
-
-            expect(container().getTracks().length).toBe(before.length);
-
-            for (const track of container().getTracks())
-                expect(
-                    containsEqualTrack(before, track)
-                ).toBe(true);
-        });
-
-        test("Reconstruct multiple tracks", () => {
-            const newTracks = container().addTracks(24);
-            const before = container().getTracks();
-            const data = container().deleteTracks(newTracks);
-            container().addTracks(data);
-
-            expect(container().getTracks().length).toBe(before.length);
-
-            for (const track of container().getTracks())
-                expect(
-                    containsEqualTrack(before, track)
-                ).toBe(true);
-        });
-
-        test("All methods throw when engine is closed", () => {
-            engine.close();
-            const methods = [
-                "getTracks",
-                "getTrack",
-                "addTrack",
-                "addTracks",
-                "deleteTrack",
-                "deleteTracks",
-                "close",
-            ];
-
-            for (const method of methods)
-                expect(container()[method]).toThrowError();
-
-            // So cleanup can run
-            engine = new Engine();
-        });
-    }
-
     describe("Mixer", () => {
         test("Get master", () => {
             expect(engine.getMaster()).toBeDefined();
         });
 
-        describe("Track addition and deletion", () => {
+        describe("Audio track addition and deletion", () => {
             function tracksEqual(track1: any, track2: any): [boolean, string] {
-                if (track1.key !== track2.key)
-                    return [false, `Keys mismatched: ${track1.key} != ${track2.key}`];
+                if (track1.key() !== track2.key())
+                    return [false, `Keys mismatched: ${track1.key()} != ${track2.key()}`];
 
                 let equal = true;
                 let reasons = [];
@@ -171,7 +42,122 @@ describe("Engine", () => {
                 ];
             }
 
-            testTrackHandlingCommon(() => engine, tracksEqual);
+            function containsEqualAudioTrack(list: any[], track: any): boolean {
+                for (const listAudioTrack of list) {
+                    if (tracksEqual(listAudioTrack, track))
+                        return true;
+                }
+                return false;
+            }
+
+            test("Has tracks", () => {
+                expect(engine.getAudioTracks()).toBeDefined();
+            });
+
+            test("Get track from key", () => {
+                const track = engine.addAudioTrack();
+                expect(tracksEqual(track, track)).toStrictEqual([true, null]);
+            });
+
+            test("Get track from key fails when track is deleted", () => {
+                const track = engine.addAudioTrack();
+                engine.deleteAudioTrack(track);
+                expect(() => engine.getAudioTrack(track.key())).toThrowError();
+            });
+
+            test("Add single track", () => {
+                const before = engine.getAudioTracks().length;
+                const newAudioTrack = engine.addAudioTrack();
+                expect(engine.getAudioTracks().length).toBe(before + 1);
+                expect(
+                    containsEqualAudioTrack(engine.getAudioTracks(), newAudioTrack)
+                ).toBe(true);
+            });
+
+            test("Add number of tracks", () => {
+                const before = engine.getAudioTracks().length;
+                const newAudioTracks = engine.addAudioTracks(5);
+                expect(engine.getAudioTracks().length).toBe(before + 5);
+                for (const track of newAudioTracks)
+                    expect(
+                        containsEqualAudioTrack(engine.getAudioTracks(), track)
+                    ).toBe(true);
+
+            });
+
+            test("Delete track", () => {
+                const before = engine.getAudioTracks();
+                const newAudioTrack = engine.addAudioTrack();
+                engine.deleteAudioTrack(newAudioTrack);
+
+                expect(engine.getAudioTracks().length).toBe(before.length);
+
+                for (const track of engine.getAudioTracks())
+                    expect(
+                        containsEqualAudioTrack(before, track)
+                    ).toBe(true);
+            });
+
+            test("Delete multiple tracks", () => {
+                const before = engine.getAudioTracks();
+                const newAudioTracks = engine.addAudioTracks(34);
+                engine.deleteAudioTracks(newAudioTracks);
+
+                expect(engine.getAudioTracks().length).toBe(before.length);
+
+                for (const track of engine.getAudioTracks())
+                    expect(
+                        containsEqualAudioTrack(before, track)
+                    ).toBe(true);
+            });
+
+            test("Reconstruct single track", () => {
+                const newAudioTrack = engine.addAudioTrack();
+                const before = engine.getAudioTracks();
+                const state = engine.deleteAudioTrack(newAudioTrack);
+                engine.reconstructAudioTrack(state);
+
+                expect(engine.getAudioTracks().length).toBe(before.length);
+
+                for (const track of engine.getAudioTracks())
+                    expect(
+                        containsEqualAudioTrack(before, track)
+                    ).toBe(true);
+            });
+
+            test("Reconstruct multiple tracks", () => {
+                const newAudioTracks = engine.addAudioTracks(24);
+                const before = engine.getAudioTracks();
+                const states = engine.deleteAudioTracks(newAudioTracks);
+                engine.reconstructAudioTracks(states);
+
+                expect(engine.getAudioTracks().length).toBe(before.length);
+
+                for (const track of engine.getAudioTracks())
+                    expect(
+                        containsEqualAudioTrack(before, track)
+                    ).toBe(true);
+            });
+
+            test("All methods throw when engine is closed", () => {
+                engine.close();
+                const methods = [
+                    "getMaster",
+                    "getAudioTracks",
+                    "addAudioTrack",
+                    "addAudioTracks",
+                    "deleteAudioTrack",
+                    "deleteAudioTracks",
+                    "importAudioClip",
+                    "close",
+                ];
+
+                for (const method of methods)
+                    expect(engine[method]).toThrowError();
+
+                // So cleanup can run
+                engine = new Engine();
+            });
         });
 
 
@@ -184,18 +170,18 @@ describe("Engine", () => {
                 testTrackCommon();
             });
 
-            describe("Regular track", () => {
-                beforeEach(() => track = engine.addTrack());
+            describe("Audio track", () => {
+                beforeEach(() => track = engine.addAudioTrack());
 
                 testTrackCommon();
 
                 test("Has key", () => {
-                    expect(typeof track.key).toBe("number");
+                    expect(typeof track.key()).toBe("number");
                 });
 
                 test("delete() deletes track", () => {
                     track.delete();
-                    expect(() => engine.getTrack(track.key)).toThrowError();
+                    expect(() => engine.getAudioTrack(track.key())).toThrowError();
                 });
 
                 test("All methods throw when track is deleted", () => {
@@ -207,6 +193,9 @@ describe("Engine", () => {
                         "setVolume",
                         "readMeter",
                         "snapMeter",
+
+                        "key",
+                        "addClip",
                         "delete",
                     ];
 
@@ -246,23 +235,6 @@ describe("Engine", () => {
                     expect(typeof track.snapMeter).toBe("function");
                 });
             }
-        });
-    });
-
-    describe("Timeline", () => {
-        test("Get timeline", () => {
-            expect(engine.timeline).toBeDefined();
-        });
-
-        describe("Track addition and deletion", () => {
-            function tracksEqual(track1: any, track2: any): [boolean, string] {
-                if (track1.key !== track2.key)
-                    return [false, `Keys mismatched: ${track1.key} != ${track2.key}`]
-                else
-                    return [true, null]
-            }
-
-            testTrackHandlingCommon(() => engine.timeline, tracksEqual)
         });
     });
 });

@@ -6,18 +6,16 @@ extern crate lazy_static;
 mod custom_output;
 mod encapsulator;
 mod shared_engine;
-mod timeline;
-mod timeline_track;
 mod timestamp;
 mod track;
 
 use neon::prelude::*;
-use track::{delete_track, TrackDataWrapper};
+use track::{audio_track, master, AudioTrackStateWrapper};
 
 use custom_output::get_debug;
 #[cfg(feature = "custom_debug_output")]
 use custom_output::output_debug;
-use encapsulator::{encapsulate, prevent_gc, unpack, Method};
+use encapsulator::{encapsulate, prevent_gc, unpack, unpack_this, Method};
 use shared_engine::SharedEngine;
 
 #[neon::main]
@@ -40,13 +38,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 /// The returned object must adhere to the interface defined in the `index.d.ts` file.
 fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
     let shared_engine = SharedEngine::new();
-    let timeline_object = timeline::construct(&mut cx, SharedEngine::clone(&shared_engine))?;
-    let object = encapsulate(
-        &mut cx,
-        shared_engine,
-        &[("timeline", timeline_object)],
-        METHODS,
-    )?;
+    let object = encapsulate(&mut cx, shared_engine, &[], METHODS)?;
     prevent_gc(&mut cx, object)?;
     Ok(object)
 }
@@ -54,144 +46,57 @@ fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
 // Closures are used to put declarations inside list, but they should be coerced to fns.
 const METHODS: &[(&str, Method)] = &[
     ("getMaster", |mut cx| {
-        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
-            let track = track::construct_master(cx, SharedEngine::clone(shared_engine))?;
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
+            let track = master::construct(cx, SharedEngine::clone(shared_engine))?;
             Ok(track.as_value(cx))
         })
     }),
-    ("getTracks", |mut cx| {
-        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
+    ("getAudioTracks", |mut cx| {
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
-                let tracks = engine.tracks();
-                let track_keys = tracks.iter().map(|track| track.key());
+                let tracks = engine.audio_tracks();
+                let js_tracks = cx.empty_array();
 
-                let length = track_keys
-                    .len()
-                    .try_into()
-                    .or_else(|_| cx.throw_error("Too many tracks to fit into array"))?;
-                let js_tracks = JsArray::new(cx, length);
-
-                for (i, key) in track_keys.enumerate() {
-                    let js_track =
-                        track::construct_track(cx, key, SharedEngine::clone(shared_engine))?;
+                for (i, track) in tracks.enumerate() {
+                    let js_track = audio_track::construct(
+                        cx,
+                        track.clone(),
+                        SharedEngine::clone(shared_engine),
+                    )?;
                     js_tracks.set(cx, i as u32, js_track)?;
                 }
                 Ok(js_tracks.as_value(cx))
             })
         })
     }),
-    ("getTrack", |mut cx| {
-        let key_js: Handle<JsNumber> = cx.argument(0)?;
-        let key = key_js.value(&mut cx) as u32;
-
-        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
+    ("addAudioTrack", |mut cx| {
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
-                // Check if track exists
-                engine
-                    .track(key)
+                let audio_track = engine
+                    .add_audio_track()
                     .or_else(|e| cx.throw_error(format!("{}", e)))?;
 
-                let track = track::construct_track(cx, key, SharedEngine::clone(shared_engine))?;
-                Ok(track.as_value(cx))
+                let js_track =
+                    audio_track::construct(cx, audio_track, SharedEngine::clone(shared_engine))?;
+
+                Ok(js_track.as_value(cx))
             })
         })
     }),
-    ("addTrack", |mut cx| {
-        let mut data_option = cx.argument_opt(0);
-        if let Some(data) = data_option {
-            let is_undefined = data.is_a::<JsUndefined, _>(&mut cx);
-            let is_null = data.is_a::<JsNull, _>(&mut cx);
-            if is_undefined || is_null {
-                data_option = None;
-            }
-        }
+    ("addAudioTracks", |mut cx| {
+        let count_js: Handle<JsNumber> = cx.argument(0)?;
+        let count = count_js.value(&mut cx) as u32;
 
-        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
-            let key = shared_engine.with_inner(cx, |cx, engine| {
-                let key = match data_option {
-                    None => engine
-                        .add_track()
-                        .or_else(|e| cx.throw_error(format!("{}", e))),
-                    Some(data_value) => {
-                        let boxed_data: Handle<JsBox<TrackDataWrapper>> =
-                            data_value.downcast_or_throw(cx)?;
-                        let data = &**boxed_data;
-                        engine
-                            .reconstruct_track(data)
-                            .or_else(|e| cx.throw_error(format!("{}", e)))
-                    }
-                }?;
-                Ok(key)
-            })?;
-
-            let js_track = track::construct_track(cx, key, SharedEngine::clone(shared_engine))?;
-
-            Ok(js_track.as_value(cx))
-        })
-    }),
-    ("addAudioTrack", |mut cx| {
-        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
-                let (tl_track_key, track_key) = engine
-                    .add_audio_track()
-                    .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
+                let tracks = engine
+                    .add_audio_tracks(count)
+                    .or_else(|e| cx.throw_error(format!("{}", &e)))?;
 
-                let tl_track_obj = timeline_track::construct(
-                    cx,
-                    tl_track_key,
-                    SharedEngine::clone(&shared_engine),
-                )?;
-                let track_obj =
-                    track::construct_track(cx, track_key, SharedEngine::clone(&shared_engine))?;
-
-                let res = JsArray::new(cx, 2);
-                res.set(cx, 0, tl_track_obj)?;
-                res.set(cx, 1, track_obj)?;
-                Ok(res.as_value(cx))
-            })
-        })
-    }),
-    ("addTracks", |mut cx| {
-        // Determine which overload is used
-        // (count: number or data: TrackData[])
-        let arg: Handle<JsValue> = cx.argument(0)?;
-        let is_count = arg.is_a::<JsNumber, _>(&mut cx);
-        let is_data = arg.is_a::<JsArray, _>(&mut cx);
-        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
-            shared_engine.with_inner(cx, |cx, engine| {
-                let keys = if is_count {
-                    let count_js: Handle<JsNumber> = arg.downcast_or_throw(cx)?;
-                    let count = count_js.value(cx) as u32;
-
-                    engine
-                        .add_tracks(count)
-                        .or_else(|e| cx.throw_error(format!("{}", &e)))
-                } else if is_data {
-                    let data_js_array: Handle<JsArray> = arg.downcast_or_throw(cx)?;
-                    let data_js = data_js_array.to_vec(cx)?;
-
-                    let mut data = Vec::with_capacity(data_js.len());
-                    for value in data_js {
-                        let boxed_data: Handle<JsBox<TrackDataWrapper>> =
-                            value.downcast_or_throw(cx)?;
-                        data.push(ardae::TrackData::clone(&***boxed_data));
-                    }
-
-                    engine
-                        .reconstruct_tracks(data.iter())
-                        .or_else(|e| cx.throw_error(format!("{}", &e)))
-                } else {
-                    cx.throw_type_error("Argument not of type `number` or `TrackData[]`")
-                }?;
-
-                let length = keys
-                    .len()
-                    .try_into()
-                    .or_else(|_| cx.throw_error("Too many tracks to fit into array"))?;
-                let new_tracks = JsArray::new(cx, length);
-                for (i, &key) in keys.iter().enumerate() {
+                let new_tracks = cx.empty_array();
+                for (i, track) in tracks.enumerate() {
                     let track =
-                        track::construct_track(cx, key, SharedEngine::clone(shared_engine))?;
+                        audio_track::construct(cx, track, SharedEngine::clone(shared_engine))?;
                     let index_js = cx.number(i as f64);
                     new_tracks.set(cx, index_js, track)?;
                 }
@@ -200,54 +105,103 @@ const METHODS: &[(&str, Method)] = &[
             })
         })
     }),
-    ("deleteTrack", |mut cx| {
+    ("deleteAudioTrack", |mut cx| {
         let track_js: Handle<JsObject> = cx.argument(0)?;
-        let key_js: Handle<JsNumber> = track_js.get(&mut cx, "key")?;
-        let key = key_js.value(&mut cx) as u32;
-        let boxed_data = delete_track(&mut cx, key)?;
-        Ok(boxed_data.as_value(&mut cx))
+        let track = audio_track::unpack_audio_track(&mut cx, track_js)?;
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
+            let boxed_state = audio_track::delete(cx, shared_engine, track)?;
+            Ok(boxed_state.as_value(cx))
+        })
     }),
-    ("deleteTracks", |mut cx| {
+    ("deleteAudioTracks", |mut cx| {
         let tracks_js_array: Handle<JsArray> = cx.argument(0)?;
         let tracks_js = tracks_js_array.to_vec(&mut cx)?;
 
-        let mut keys = Vec::with_capacity(tracks_js.len());
-        for value in tracks_js {
-            let track_js: Handle<JsObject> = value.downcast_or_throw(&mut cx)?;
-            let key_js: Handle<JsNumber> = track_js.get(&mut cx, "key")?;
-            let key = key_js.value(&mut cx) as u32;
-            keys.push(key);
-        }
+        let tracks = tracks_js
+            .into_iter()
+            .map(|value| {
+                let track_js: Handle<JsObject> = value.downcast_or_throw(&mut cx)?;
+                let track = audio_track::unpack_audio_track(&mut cx, track_js)?;
+                Ok(track)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
 
-        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
-                let length = keys
+                let length = tracks
                     .len()
                     .try_into()
                     .or_else(|_| cx.throw_error("Too many tracks to fit into array"))?;
-                let data_array = JsArray::new(cx, length);
+                let state_array = JsArray::new(cx, length);
 
-                for (i, &key) in keys.iter().enumerate() {
-                    let track = engine
-                        .track(key)
+                for (i, track) in tracks.iter().enumerate() {
+                    let state = engine
+                        .audio_track_state(track)
                         .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
-                    let data = TrackDataWrapper(track.data());
-                    let boxed_data = cx.boxed(data);
+                    let state_js = encapsulate(cx, AudioTrackStateWrapper(state), &[], &[])?;
 
                     let index_js = cx.number(i as f64);
-                    data_array.set(cx, index_js, boxed_data)?;
+                    state_array.set(cx, index_js, state_js)?;
                 }
 
                 engine
-                    .delete_tracks(keys)
+                    .delete_audio_tracks(tracks)
                     .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
 
-                Ok(data_array.as_value(cx))
+                Ok(state_array.as_value(cx))
             })
         })
     }),
+    ("reconstructAudioTrack", |mut cx| {
+        let state_js: Handle<JsObject> = cx.argument(0)?;
+        unpack(&mut cx, state_js, |cx, state: &AudioTrackStateWrapper| {
+            unpack_this(cx, |cx, shared_engine: &SharedEngine| {
+                shared_engine.with_inner(cx, |cx, engine| {
+                    let track = engine
+                        .reconstruct_audio_track(state.0.clone())
+                        .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
+                    let track_js =
+                        audio_track::construct(cx, track, SharedEngine::clone(shared_engine))?;
+                    Ok(track_js.as_value(cx))
+                })
+            })
+        })
+    }),
+    ("reconstructAudioTracks", |mut cx| {
+        let states_js_array: Handle<JsArray> = cx.argument(0)?;
+        let states_js = states_js_array.to_vec(&mut cx)?;
+        let states = states_js
+            .iter()
+            .map(|value| {
+                let state_js: Handle<JsObject> = value.downcast_or_throw(&mut cx)?;
+                let state = unpack(&mut cx, state_js, |_cx, state: &AudioTrackStateWrapper| {
+                    Ok(state.0.clone())
+                })?;
+                Ok(state)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.with_inner(cx, |cx, engine| {
+                let tracks = engine
+                    .reconstruct_audio_tracks(states)
+                    .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
+
+                let tracks_js = cx.empty_array();
+                for (i, track) in tracks.into_iter().enumerate() {
+                    let track_js =
+                        audio_track::construct(cx, track, SharedEngine::clone(shared_engine))?;
+                    let index_js = cx.number(i as f64);
+                    tracks_js.set(cx, index_js, track_js)?;
+                }
+
+                Ok(tracks_js.as_value(cx))
+            })
+        })
+    }),
+    ("importAudioClip", |mut _cx| todo!("importAudioClip")),
     ("close", |mut cx| {
-        unpack(&mut cx, |cx, shared_engine: &SharedEngine| {
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.close(cx)?;
 
             Ok(cx.undefined().as_value(cx))
