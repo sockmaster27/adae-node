@@ -5,11 +5,11 @@
     "main": "index.node",
     "types": "index.d.ts",
     "scripts": {
-        "build": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
-        "build-debug": "npm run build -- --features custom_debug_output",
-        "build-record": "npm run build-debug record_output",
-        "build-release": "npm run build -- --release",
-        "install": "npm run build-release",
+        "build-inner": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
+        "build-debug": "npm run build-inner -- --features custom_debug_output",
+        "build-record": "npm run build-inner -- --features custom_debug_output,record_output",
+        "build": "npm run build-inner -- --release",
+        "install": "npm run build",
         "test": "concurrently \"cargo test\" \"npm:build-debug\"  \"tsc --project ./tests/tsconfig.json\" && jest"
     },
     "jest": {
