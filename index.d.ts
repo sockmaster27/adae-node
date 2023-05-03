@@ -15,6 +15,9 @@ declare module "ardae-js" {
         /** Create and initialize new engine. */
         constructor()
 
+        /**
+         * Get the master track, which is always present on the mixer.
+         */
         getMaster(): MasterTrack
 
         /**
@@ -131,10 +134,12 @@ declare module "ardae-js" {
         private constructor()
     }
 
-    class AudioClip extends ExposedObject {
+    abstract class Clip extends ExposedObject {
+        key(): number
+    }
+    class AudioClip extends Clip {
         #type: "AudioClip"
         private constructor()
-        readonly key: number
     }
 
     class Timestamp extends ExposedObject {
