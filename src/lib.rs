@@ -3,20 +3,24 @@
 #[macro_use]
 extern crate lazy_static;
 
+mod clip;
 mod custom_output;
 mod encapsulator;
 mod shared_engine;
 mod timestamp;
 mod track;
 
+use std::path::Path;
+
+use clip::audio_clip;
 use neon::prelude::*;
-use track::{audio_track, master, AudioTrackStateWrapper};
 
 use custom_output::get_debug;
 #[cfg(feature = "custom_debug_output")]
 use custom_output::output_debug;
 use encapsulator::{encapsulate, prevent_gc, unpack, unpack_this, Method};
 use shared_engine::SharedEngine;
+use track::{audio_track, master, AudioTrackStateWrapper};
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
@@ -199,7 +203,20 @@ const METHODS: &[(&str, Method)] = &[
             })
         })
     }),
-    ("importAudioClip", |mut _cx| todo!("importAudioClip")),
+    ("importAudioClip", |mut cx| {
+        let path_js: Handle<JsString> = cx.argument(0)?;
+        let path = path_js.value(&mut cx);
+
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.with_inner(cx, |cx, engine| {
+                let clip = engine
+                    .import_audio_clip(Path::new(&path))
+                    .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
+                let clip_js = audio_clip::construct(cx, clip)?;
+                Ok(clip_js.as_value(cx))
+            })
+        })
+    }),
     ("close", |mut cx| {
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.close(cx)?;

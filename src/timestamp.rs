@@ -42,10 +42,16 @@ const STATIC_METHODS: &[(&str, Method)] = &[
         let beat_units_f64 = beat_units_js.value(&mut cx);
 
         if beat_units_f64 < 0.0 {
-            return cx.throw_range_error("Timestamp with beat unit value under 0 is not valid");
+            return cx.throw_range_error(format!(
+                "Timestamp with beat unit value under 0 is not valid. Got {}",
+                beat_units_f64
+            ));
         }
         if (u32::MAX as f64) < beat_units_f64 {
-            return cx.throw_range_error("Timestamp must have beat unit value less than 2^32");
+            return cx.throw_range_error(format!(
+                "Timestamp must have beat unit value less than 2^32. Got {}",
+                beat_units_f64
+            ));
         }
 
         let beat_units = beat_units_f64 as u32;

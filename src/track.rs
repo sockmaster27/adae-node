@@ -49,7 +49,7 @@ pub mod audio_track {
         hash::{Hash, Hasher},
     };
 
-    use crate::encapsulator::unpack;
+    use crate::{encapsulator::unpack, timestamp::timestamp};
 
     use super::*;
 
@@ -153,7 +153,52 @@ pub mod audio_track {
                 Ok(cx.number(key as f64).as_value(cx))
             })
         }),
-        ("addClip", |mut _cx| todo!("addClip")),
+        ("addClip", |mut cx| {
+            let audio_clip_js = cx.argument::<JsObject>(0)?;
+            let audio_clip_key =
+                unpack(&mut cx, audio_clip_js, |_, &ack: &ardae::AudioClipKey| {
+                    Ok(ack)
+                })?;
+
+            let start_js = cx.argument::<JsObject>(1)?;
+            let start = timestamp(&mut cx, start_js)?;
+
+            let length_js_val = cx.argument_opt(2);
+            let length_js = match length_js_val {
+                Some(val) => {
+                    if val.is_a::<JsNull, _>(&mut cx) {
+                        None
+                    } else if val.is_a::<JsUndefined, _>(&mut cx) {
+                        None
+                    } else {
+                        Some(val.downcast_or_throw(&mut cx)?)
+                    }
+                }
+                None => None,
+            };
+            let length = match length_js {
+                Some(length_js) => Some(timestamp(&mut cx, length_js)?),
+                None => None,
+            };
+
+            unpack_this(
+                &mut cx,
+                |cx, (shared_engine, audio_track): &(SharedEngine, AudioTrackWrapper)| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        engine
+                            .add_clip(
+                                audio_track.timeline_track_key(),
+                                audio_clip_key,
+                                start,
+                                length,
+                            )
+                            .or_else(|e| cx.throw_error(format!("{}", &e)))?;
+
+                        Ok(cx.undefined().as_value(cx))
+                    })
+                },
+            )
+        }),
         ("delete", |mut cx| {
             unpack_this(&mut cx, |cx, data: &(SharedEngine, AudioTrackWrapper)| {
                 let (shared_engine, audio_track) = data;
