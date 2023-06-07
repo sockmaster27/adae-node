@@ -45,7 +45,8 @@ impl SharedEngine {
 
     pub fn close(&self, cx: &mut CallContext<JsObject>) -> Result<(), Throw> {
         let mut option = self.lock(cx)?;
-        option.take();
+        let engine = option.take();
+        drop(engine);
         Ok(())
     }
 }

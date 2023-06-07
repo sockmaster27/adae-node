@@ -6,19 +6,21 @@ extern crate lazy_static;
 mod clip;
 mod custom_output;
 mod encapsulator;
+mod panic_handling;
 mod shared_engine;
 mod timestamp;
 mod track;
 
 use std::path::Path;
 
-use clip::audio_clip;
 use neon::prelude::*;
 
+use clip::audio_clip;
 use custom_output::get_debug;
 #[cfg(feature = "custom_debug_output")]
 use custom_output::output_debug;
 use encapsulator::{encapsulate, prevent_gc, unpack, unpack_this, Method};
+use panic_handling::{listen_for_crash, stop_listening_for_crash};
 use shared_engine::SharedEngine;
 use track::{audio_track, master, AudioTrackStateWrapper};
 
@@ -32,6 +34,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("meterScale", meter_scale)?;
     cx.export_function("inverseMeterScale", inverse_meter_scale)?;
     cx.export_function("getDebugOutput", get_debug)?;
+    cx.export_function("listenForCrash", listen_for_crash)?;
+    cx.export_function("stopListeningForCrash", stop_listening_for_crash)?;
 
     let timestamp_class = timestamp::class(&mut cx)?;
     cx.export_value("Timestamp", timestamp_class)?;

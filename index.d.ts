@@ -69,7 +69,7 @@ declare module "ardae-js" {
 
         /** 
          * Closes down the engine gracefully.
-         * After this is called all other functions will throw an `Error`.
+         * After this is called all other methods will throw an `Error`.
          */
         close(): void
     }
@@ -171,4 +171,22 @@ declare module "ardae-js" {
      * If package is built in release mode (default), this will never resolve.
      */
     function getDebugOutput(): Promise<string>
+
+    /**
+     * Rejects if the engine has crashed.
+     * 
+     * Resolves when `stopListeningForCrash` is called. If this is never called, the process might hang.
+     * 
+     * Whenever possible, crashes will be thrown as exceptions by the function that caused them.
+     * This function only exists to catch crashes that happen in the realtime thread, which cannot otherwise be caught by the JS engine.
+     * 
+     * If this reports a crash, this entire extension-module (including all open engines) will be in an undefined state, and should be closed.
+     */
+    function listenForCrash(): Promise<void>
+    /**
+     * Makes `listenForCrash` resolve.
+     * 
+     * This should be called when the engine is closed, to avoid hanging the process.
+     */
+    function stopListeningForCrash(): void
 }
