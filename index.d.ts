@@ -1,7 +1,7 @@
 // "#type" is used to disallow two types being mixed up.
 // It doesn't actually exist at runtime.
 
-declare module "ardae-js" {
+declare module "adae-js" {
     abstract class ExposedObject {
         /** The internal data and state of the engine. Do not touch. */
         private data: unknown

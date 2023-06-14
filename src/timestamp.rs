@@ -1,6 +1,6 @@
 use neon::prelude::*;
 
-use ardae::Timestamp;
+use adae::Timestamp;
 
 use crate::encapsulator::{self, encapsulate, Method};
 

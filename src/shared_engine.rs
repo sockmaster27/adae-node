@@ -11,14 +11,14 @@ pub struct SharedEngine(
     // Arc allows each track to also have a reference
     // Mutex allows the value to be borrowed mutably from one place at a time
     // Option allows the engine to be dropped which stops audio
-    Arc<Mutex<Option<ardae::Engine>>>,
+    Arc<Mutex<Option<adae::Engine>>>,
 );
 impl SharedEngine {
     pub fn new() -> Self {
-        Self(Arc::new(Mutex::new(Some(ardae::Engine::new()))))
+        Self(Arc::new(Mutex::new(Some(adae::Engine::new()))))
     }
 
-    fn lock<'a, C>(&self, cx: &mut C) -> Result<MutexGuard<Option<ardae::Engine>>, Throw>
+    fn lock<'a, C>(&self, cx: &mut C) -> Result<MutexGuard<Option<adae::Engine>>, Throw>
     where
         C: Context<'a>,
     {
@@ -30,7 +30,7 @@ impl SharedEngine {
     pub fn with_inner<'a, C, R, F>(&self, cx: &mut C, callback: F) -> Result<R, Throw>
     where
         C: Context<'a>,
-        F: FnOnce(&mut C, &mut ardae::Engine) -> Result<R, Throw>,
+        F: FnOnce(&mut C, &mut adae::Engine) -> Result<R, Throw>,
     {
         let mut option_guard = self.lock(cx)?;
         let engine = match *option_guard {

@@ -27,7 +27,7 @@ use track::{audio_track, master, AudioTrackStateWrapper};
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     #[cfg(feature = "custom_debug_output")]
-    ardae::set_output(output_debug);
+    adae::set_output(output_debug);
 
     cx.export_function("Engine", constructor)?;
 
@@ -234,7 +234,7 @@ fn meter_scale(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let value_js: Handle<JsNumber> = cx.argument(0)?;
     let value = value_js.value(&mut cx) as f32;
 
-    let result = ardae::meter_scale(value);
+    let result = adae::meter_scale(value);
     let result_js = cx.number(result);
 
     Ok(result_js)
@@ -244,7 +244,7 @@ fn inverse_meter_scale(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let value_js: Handle<JsNumber> = cx.argument(0)?;
     let value = value_js.value(&mut cx) as f32;
 
-    let result = ardae::inverse_meter_scale(value);
+    let result = adae::inverse_meter_scale(value);
     let result_js = cx.number(result);
 
     Ok(result_js)
