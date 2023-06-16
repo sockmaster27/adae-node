@@ -59,4 +59,20 @@ const STATIC_METHODS: &[(&str, Method)] = &[
     }),
 ];
 
-const METHODS: &[(&str, Method)] = &[];
+const METHODS: &[(&str, Method)] = &[
+    ("getBeatUnits", |mut cx| {
+        let this = cx.this();
+        let timestamp = timestamp(&mut cx, this)?;
+        let beat_units = timestamp.beat_units();
+        Ok(cx.number(beat_units as f64).upcast())
+    }),
+    ("equals", |mut cx| {
+        let this_js = cx.this();
+        let this = timestamp(&mut cx, this_js)?;
+
+        let other_js = cx.argument::<JsObject>(0)?;
+        let other = timestamp(&mut cx, other_js)?;
+
+        Ok(cx.boolean(this == other).upcast())
+    }),
+];

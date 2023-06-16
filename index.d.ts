@@ -149,6 +149,7 @@ declare module "adae-js" {
         static zero(): Timestamp
         static fromBeatUnits(beatUnits: number): Timestamp
 
+        equals(other: Timestamp): boolean
         getBeatUnits(): number
     }
 

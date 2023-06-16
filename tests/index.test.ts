@@ -239,6 +239,29 @@ describe("Engine", () => {
     });
 });
 
+describe("Timestamp", () => {
+    test("zero() is zero", () => {
+        expect(Timestamp.zero().getBeatUnits()).toBe(0);
+    });
+
+    test("fromBeatUnits() -> getBeatUnits()", () => {
+        const original = 42;
+        const timestamp = Timestamp.fromBeatUnits(original);
+        expect(timestamp.getBeatUnits()).toBe(original);
+    });
+
+    test("equals", () => {
+        const timestamp1 = Timestamp.fromBeatUnits(42);
+        const timestamp2 = Timestamp.fromBeatUnits(42);
+        expect(timestamp1.equals(timestamp2)).toBe(true);
+    });
+    test("not equals", () => {
+        const timestamp1 = Timestamp.fromBeatUnits(42);
+        const timestamp2 = Timestamp.fromBeatUnits(43);
+        expect(timestamp1.equals(timestamp2)).toBe(false);
+    });
+});
+
 test("inverseMeterScale() is inverse of meterScale()", () => {
     const result = inverseMeterScale(meterScale(0.6));
     expect(Math.abs(result - 0.6)).toBeLessThan(0.00001);
