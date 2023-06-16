@@ -53,6 +53,14 @@ fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
 
 // Closures are used to put declarations inside list, but they should be coerced to fns.
 const METHODS: &[(&str, Method)] = &[
+    ("getPlayheadPosition", |mut cx| {
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.with_inner(cx, |cx, engine| {
+                let timestamp = timestamp::construct(cx, engine.playhead_position())?;
+                Ok(timestamp.as_value(cx))
+            })
+        })
+    }),
     ("getMaster", |mut cx| {
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             let track = master::construct(cx, SharedEngine::clone(shared_engine))?;

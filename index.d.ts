@@ -16,6 +16,11 @@ declare module "adae-js" {
         constructor()
 
         /**
+         * Get the current playhead position.
+         */
+        getPlayheadPosition(): Timestamp
+
+        /**
          * Get the master track, which is always present on the mixer.
          */
         getMaster(): MasterTrack

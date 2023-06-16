@@ -1,4 +1,4 @@
-const { Engine, inverseMeterScale, meterScale } = require("../../index.node"); // Relative to the destination
+const { Engine, Timestamp, inverseMeterScale, meterScale } = require("../../index.node"); // Relative to the destination
 
 
 
@@ -9,6 +9,10 @@ describe("Engine", () => {
     });
     afterEach(() => {
         engine.close();
+    });
+
+    test("getPlayheadPosition()", () => {
+        expect(engine.getPlayheadPosition()).toBeDefined();
     });
 
     describe("Mixer", () => {
