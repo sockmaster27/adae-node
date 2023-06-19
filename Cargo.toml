@@ -1,5 +1,5 @@
 [package]
-name = "adae-js"
+name = "adae-node"
 version = "0.1.0"
 license = "ISC"
 edition = "2021"
