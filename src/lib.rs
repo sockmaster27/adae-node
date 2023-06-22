@@ -22,6 +22,7 @@ use custom_output::output_debug;
 use encapsulator::{encapsulate, prevent_gc, unpack, unpack_this, Method};
 use panic_handling::{listen_for_crash, stop_listening_for_crash};
 use shared_engine::SharedEngine;
+use timestamp::timestamp;
 use track::{audio_track, master, AudioTrackStateWrapper};
 
 #[neon::main]
@@ -53,6 +54,33 @@ fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
 
 // Closures are used to put declarations inside list, but they should be coerced to fns.
 const METHODS: &[(&str, Method)] = &[
+    ("play", |mut cx| {
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.with_inner(cx, |cx, engine| {
+                engine.play();
+                Ok(cx.undefined().as_value(cx))
+            })
+        })
+    }),
+    ("pause", |mut cx| {
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.with_inner(cx, |cx, engine| {
+                engine.pause();
+                Ok(cx.undefined().as_value(cx))
+            })
+        })
+    }),
+    ("jumpTo", |mut cx| {
+        let timestamp_js: Handle<JsObject> = cx.argument(0)?;
+        let timestamp = timestamp(&mut cx, timestamp_js)?;
+
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.with_inner(cx, |cx, engine| {
+                engine.jump_to(timestamp);
+                Ok(cx.undefined().as_value(cx))
+            })
+        })
+    }),
     ("getPlayheadPosition", |mut cx| {
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {

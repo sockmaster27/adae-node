@@ -16,7 +16,23 @@ declare module "adae-node" {
         constructor()
 
         /**
+         * Play timeline from the current playhead position.
+         */
+        play(): void
+        /**
+         * Pause playback of the timeline, without resetting the playhead position.
+         */
+        pause(): void
+        /**
+         * Set the current playhead position.
+         * 
+         * This can be done both while the timeline is playing and while it is paused.
+         */
+        jumpTo(position: Timestamp): void
+        /**
          * Get the current playhead position.
+         * 
+         * This reports the position as it currently is on the audio thread, which might have a slight delay in reacting to `jumpTo`.
          */
         getPlayheadPosition(): Timestamp
 

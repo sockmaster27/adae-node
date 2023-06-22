@@ -11,8 +11,22 @@ describe("Engine", () => {
         engine.close();
     });
 
-    test("getPlayheadPosition()", () => {
-        expect(engine.getPlayheadPosition()).toBeDefined();
+    describe("Timeline", () => {
+        test("play()", () => {
+            expect(engine.play()).toBeUndefined();
+        });
+
+        test("pause()", () => {
+            expect(engine.pause()).toBeUndefined();
+        });
+
+        test("jumpTo()", () => {
+            expect(engine.jumpTo(Timestamp.zero())).toBeUndefined();
+        });
+
+        test("getPlayheadPosition()", () => {
+            expect(engine.getPlayheadPosition()).toBeDefined();
+        });
     });
 
     describe("Mixer", () => {
