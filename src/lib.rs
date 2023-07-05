@@ -1,8 +1,5 @@
 //! Binding for Node.js' native addon API.
 
-#[macro_use]
-extern crate lazy_static;
-
 mod clip;
 mod custom_output;
 mod encapsulator;

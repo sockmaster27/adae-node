@@ -1,20 +1,25 @@
 use std::collections::VecDeque;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard, OnceLock};
 
 use neon::prelude::*;
 use neon::types::Deferred;
 
 static ERR_MSG: &str = "Failed to write to custom debug output";
 
-lazy_static! {
-    static ref RESOLVER: Mutex<Option<(Channel, Deferred)>> = Mutex::new(None);
-    static ref UNRESOLVED: Mutex<VecDeque<String>> = Mutex::new(VecDeque::new());
+static RESOLVER: Mutex<Option<(Channel, Deferred)>> = Mutex::new(None);
+static UNRESOLVED: OnceLock<Mutex<VecDeque<String>>> = OnceLock::new();
+
+fn unresolved() -> MutexGuard<'static, VecDeque<String>> {
+    UNRESOLVED
+        .get_or_init(|| Mutex::new(VecDeque::new()))
+        .lock()
+        .expect(ERR_MSG)
 }
 
 pub fn get_debug(mut cx: FunctionContext) -> JsResult<JsPromise> {
     let (deferred, promise) = cx.promise();
 
-    let mut unresolved = UNRESOLVED.lock().expect(ERR_MSG);
+    let mut unresolved = unresolved();
 
     if unresolved.is_empty() {
         let channel = cx.channel();
@@ -40,7 +45,7 @@ pub fn output_debug(msg: String) {
         }
 
         None => {
-            let mut unresolved = UNRESOLVED.lock().expect(ERR_MSG);
+            let mut unresolved = unresolved();
 
             // Cap length
             if unresolved.len() >= 100 {

@@ -11,7 +11,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 adae = { path = "../adae" }
-lazy_static = "1.4"
 
 [dependencies.neon]
 version = "0.10"
