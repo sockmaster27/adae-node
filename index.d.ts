@@ -86,7 +86,7 @@ declare module "adae-node" {
         reconstructAudioTracks(states: AudioTrackState[]): AudioTrack[]
 
 
-        importAudioClip(path: string): AudioClip
+        importAudioClip(path: string): StoredAudioClip
 
         /** 
          * Closes down the engine gracefully.
@@ -132,7 +132,7 @@ declare module "adae-node" {
         key(): number
 
 
-        addClip(clip: AudioClip, start: Timestamp, length?: Timestamp): void
+        addClip(clip: StoredAudioClip, start: Timestamp, length?: Timestamp): void
 
         /** 
          * Alias for `Engine.deleteAudioTrack(this)`:
@@ -155,10 +155,13 @@ declare module "adae-node" {
         private constructor()
     }
 
-    abstract class Clip extends ExposedObject {
+    /**
+     * A clip that can be placed on the timeline.
+     */
+    abstract class StoredClip extends ExposedObject {
         key(): number
     }
-    class AudioClip extends Clip {
+    class StoredAudioClip extends StoredClip {
         #type: "AudioClip"
         private constructor()
     }
