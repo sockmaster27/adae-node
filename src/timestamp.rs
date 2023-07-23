@@ -35,6 +35,14 @@ pub fn timestamp<'a>(
 struct TimestampWrapper(Timestamp);
 impl Finalize for TimestampWrapper {}
 
+/// Example: `err_msg("beat", "greater than zero", -1.0)` -> `"Timestamp must have beat value greater than zero. Got -1"`
+fn err_msg(property: &str, expected_to_be: &str, value: f64) -> String {
+    format!(
+        "Timestamp must have {} value {}. Got {}",
+        property, expected_to_be, value
+    )
+}
+
 const STATIC_METHODS: &[(&str, Method)] = &[
     ("zero", |mut cx| construct(&mut cx, Timestamp::zero())),
     ("fromBeatUnits", |mut cx| {
@@ -42,20 +50,73 @@ const STATIC_METHODS: &[(&str, Method)] = &[
         let beat_units_f64 = beat_units_js.value(&mut cx);
 
         if beat_units_f64 < 0.0 {
-            return cx.throw_range_error(format!(
-                "Timestamp with beat unit value under 0 is not valid. Got {}",
-                beat_units_f64
-            ));
+            return cx.throw_range_error(err_msg("beat unit", "greater than zero", beat_units_f64));
         }
         if (u32::MAX as f64) < beat_units_f64 {
-            return cx.throw_range_error(format!(
-                "Timestamp must have beat unit value less than 2^32. Got {}",
-                beat_units_f64
-            ));
+            return cx.throw_range_error(err_msg("beat unit", "smaller than 2^32", beat_units_f64));
         }
 
         let beat_units = beat_units_f64 as u32;
         construct(&mut cx, Timestamp::from_beat_units(beat_units))
+    }),
+    ("fromBeats", |mut cx| {
+        let beats_js: Handle<JsNumber> = cx.argument(0)?;
+        let beats_f64 = beats_js.value(&mut cx);
+
+        if beats_f64 < 0.0 {
+            return cx.throw_range_error(err_msg("beat", "greater than zero", beats_f64));
+        }
+        if (u32::MAX as f64) < beats_f64 {
+            return cx.throw_range_error(err_msg("beat", "smaller than 2^32", beats_f64));
+        }
+
+        let beats = beats_f64 as u32;
+        construct(&mut cx, Timestamp::from_beats(beats))
+    }),
+    ("fromSamples", |mut cx| {
+        let samples_js: Handle<JsNumber> = cx.argument(0)?;
+        let samples_f64 = samples_js.value(&mut cx);
+        if samples_f64 < 0.0 {
+            return cx.throw_range_error(err_msg("sample", "greater than zero", samples_f64));
+        }
+        if (u64::MAX as f64) < samples_f64 {
+            return cx.throw_range_error(err_msg("sample", "smaller than 2^64", samples_f64));
+        }
+        let samples = samples_f64 as u64;
+
+        let sample_rate_js: Handle<JsNumber> = cx.argument(1)?;
+        let sample_rate_f64 = sample_rate_js.value(&mut cx);
+        if sample_rate_f64 < 0.0 {
+            return cx.throw_range_error(err_msg(
+                "sample rate",
+                "greater than zero",
+                sample_rate_f64,
+            ));
+        }
+        if (u32::MAX as f64) < sample_rate_f64 {
+            return cx.throw_range_error(err_msg(
+                "sample rate",
+                "smaller than 2^32",
+                sample_rate_f64,
+            ));
+        }
+        let sample_rate = sample_rate_f64 as u32;
+
+        let bpm_js: Handle<JsNumber> = cx.argument(2)?;
+        let bpm_f64 = bpm_js.value(&mut cx);
+        let bpm_cents_f64 = bpm_f64 * 100.0;
+        if bpm_cents_f64 < 0.0 {
+            return cx.throw_range_error(err_msg("BPM", "greater than zero", bpm_f64));
+        }
+        if (u16::MAX as f64) < bpm_cents_f64 {
+            return cx.throw_range_error(err_msg("BPM", "smaller than 2^16 / 100", bpm_f64));
+        }
+        let bpm_cents = bpm_cents_f64 as u16;
+
+        construct(
+            &mut cx,
+            Timestamp::from_samples(samples, sample_rate, bpm_cents),
+        )
     }),
 ];
 
@@ -64,6 +125,48 @@ const METHODS: &[(&str, Method)] = &[
         let this = cx.this();
         let timestamp = timestamp(&mut cx, this)?;
         let beat_units = timestamp.beat_units();
+        Ok(cx.number(beat_units as f64).upcast())
+    }),
+    ("getBeats", |mut cx| {
+        let this = cx.this();
+        let timestamp = timestamp(&mut cx, this)?;
+        let beat_units = timestamp.beats();
+        Ok(cx.number(beat_units as f64).upcast())
+    }),
+    ("getSamples", |mut cx| {
+        let this = cx.this();
+
+        let sample_rate_js: Handle<JsNumber> = cx.argument(0)?;
+        let sample_rate_f64 = sample_rate_js.value(&mut cx);
+        if sample_rate_f64 < 0.0 {
+            return cx.throw_range_error(err_msg(
+                "sample rate",
+                "greater than zero",
+                sample_rate_f64,
+            ));
+        }
+        if (u32::MAX as f64) < sample_rate_f64 {
+            return cx.throw_range_error(err_msg(
+                "sample rate",
+                "smaller than 2^32",
+                sample_rate_f64,
+            ));
+        }
+        let sample_rate = sample_rate_f64 as u32;
+
+        let bpm_js: Handle<JsNumber> = cx.argument(1)?;
+        let bpm_f64 = bpm_js.value(&mut cx);
+        let bpm_cents_f64 = bpm_f64 * 100.0;
+        if bpm_cents_f64 < 0.0 {
+            return cx.throw_range_error(err_msg("BPM", "greater than zero", bpm_f64));
+        }
+        if (u16::MAX as f64) < bpm_cents_f64 {
+            return cx.throw_range_error(err_msg("BPM", "smaller than 2^16 / 100", bpm_f64));
+        }
+        let bpm_cents = bpm_cents_f64 as u16;
+
+        let timestamp = timestamp(&mut cx, this)?;
+        let beat_units = timestamp.samples(sample_rate, bpm_cents);
         Ok(cx.number(beat_units as f64).upcast())
     }),
     ("equals", |mut cx| {

@@ -172,9 +172,14 @@ declare module "adae-node" {
 
         static zero(): Timestamp
         static fromBeatUnits(beatUnits: number): Timestamp
+        static fromBeats(beats: number): Timestamp
+        static fromSamples(samples: number, sampleRate: number, bpm: number): Timestamp
 
-        equals(other: Timestamp): boolean
         getBeatUnits(): number
+        getBeats(): number
+        getSamples(sampleRate: number, bpm: number): number
+        
+        equals(other: Timestamp): boolean
     }
 
     /**

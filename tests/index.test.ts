@@ -262,7 +262,44 @@ describe("Timestamp", () => {
         expect(Timestamp.zero().getBeatUnits()).toBe(0);
     });
 
-    test("fromBeatUnits() -> getBeatUnits()", () => {
+    test("Beat units -> Beat units", () => {
+        const original = 42;
+        const timestamp = Timestamp.fromBeatUnits(original);
+        expect(timestamp.getBeatUnits()).toBe(original);
+    });
+    test("Beats -> Beats", () => {
+        const original = 42;
+        const timestamp = Timestamp.fromBeats(original);
+        expect(timestamp.getBeats()).toBe(original);
+    });
+    test("Samples -> Samples", () => {
+        // The number 375 fits nicely into the roundings of the conversion 
+        const original = 375;
+        const timestamp = Timestamp.fromSamples(original, 48_000, 120);
+        expect(timestamp.getSamples(48_000, 120)).toBe(original);
+    });
+    test("Beats -> Beat units", () => {
+        const original = 42;
+        const timestamp = Timestamp.fromBeats(original);
+        expect(timestamp.getBeatUnits()).toBe(original * 1024);
+    });
+    test("Samples -> Beat units", () => {
+        const original = 420;
+        const timestamp = Timestamp.fromSamples(original, 48_000, 120);
+        expect(timestamp.getBeatUnits()).toBe(17);
+    });
+
+    test("getBeatUnits()", () => {
+        const original = 42;
+        const timestamp = Timestamp.fromBeatUnits(original);
+        expect(timestamp.getBeatUnits()).toBe(original);
+    });
+    test("getBeats()", () => {
+        const original = 42;
+        const timestamp = Timestamp.fromBeatUnits(original);
+        expect(timestamp.getBeatUnits()).toBe(original);
+    });
+    test("getSamples()", () => {
         const original = 42;
         const timestamp = Timestamp.fromBeatUnits(original);
         expect(timestamp.getBeatUnits()).toBe(original);
