@@ -255,6 +255,12 @@ describe("Engine", () => {
             }
         });
     });
+
+    describe("Audio clip", () => {
+        test("importAudioClip() exists", () => {
+            expect(typeof engine.importAudioClip).toBe("function");
+        });
+    });
 });
 
 describe("Timestamp", () => {
