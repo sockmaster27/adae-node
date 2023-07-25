@@ -32,7 +32,7 @@ declare module "adae-node" {
         /**
          * Get the current playhead position.
          * 
-         * This reports the position as it currently is on the audio thread, which might have a slight delay in reacting to `jumpTo`.
+         * This reports the position as it currently is on the audio thread, which might have a slight delay in reacting to {@linkcode Engine.jumpTo()}.
          */
         getPlayheadPosition(): Timestamp
 
@@ -58,30 +58,32 @@ declare module "adae-node" {
 
         /**
          * Delete audio track, and remove it from the mixer. 
-         * After this is done, calling any method on the track will throw an `Error`.
+         * After this is done, calling any method on the track will throw an {@linkcode Error}.
          * 
-         * Returns a state that can be passed to `Engine.reconstructAudioTrack/s()`, to reconstruct this track.
+         * Returns a state that can be passed to {@linkcode Engine.reconstructAudioTrack()}/{@linkcode reconstructAudioTracks()}, 
+         * to reconstruct this track.
          */
         deleteAudioTrack(audioTrack: AudioTrack): AudioTrackState
 
         /**
          * Delete an array of audio tracks, and remove thme from the mixer. 
-         * After this is done, calling any method on these tracks will throw an `Error`.
+         * After this is done, calling any method on these tracks will throw an {@linkcode Error}.
          * 
-         * Returns an array of data that can be passed to `Engine.reconstructAudioTrack/s()`, to reconstruct these tracks.
+         * Returns an array of data that can be passed to {@linkcode Engine.reconstructAudioTrack()}/{@linkcode reconstructAudioTracks()}, 
+         * to reconstruct these tracks.
          */
         deleteAudioTracks(audioTracks: AudioTrack[]): AudioTrackState[]
 
         /**
          * Reconstruct an audio track that has been deleted.
          * 
-         * The state can be obtained by calling `AudioTrack.delete()` or `Engine.deleteAudioTrack/s()`.
+         * The state can be obtained by calling {@linkcode AudioTrack.delete()} or {@linkcode Engine.deleteAudioTrack()}/{@linkcode deleteAudioTracks()}.
          */
         reconstructAudioTrack(state: AudioTrackState): AudioTrack
         /**
          * Reconstruct an array of audio tracks that have been deleted.
          * 
-         * The states can be obtained by calling `AudioTrack.delete()` or `Engine.deleteAudioTrack/s()`.
+         * The states can be obtained by calling {@linkcode AudioTrack.delete()} or {@linkcode Engine.deleteAudioTrack()}/{@linkcode deleteAudioTracks()}.
          */
         reconstructAudioTracks(states: AudioTrackState[]): AudioTrack[]
 
@@ -90,7 +92,7 @@ declare module "adae-node" {
 
         /** 
          * Closes down the engine gracefully.
-         * After this is called all other methods will throw an `Error`.
+         * After this is called all other methods will throw an {@linkcode Error}.
          */
         close(): void
     }
@@ -113,7 +115,7 @@ declare module "adae-node" {
         /** 
          * Cut off smoothing of RMS, and snap it to its current unsmoothed value.
          * 
-         * Should be called before `readMeter()` is called the first time or after a long break,
+         * Should be called before {@linkcode Track.readMeter()} is called the first time or after a long break,
          * to avoid meter sliding in place from zero or a very old value.
          */
         snapMeter(): void
@@ -135,12 +137,13 @@ declare module "adae-node" {
         addClip(clip: StoredAudioClip, start: Timestamp, length?: Timestamp): void
 
         /** 
-         * Alias for `Engine.deleteAudioTrack(this)`:
+         * Alias for {@linkcode Engine.deleteAudioTrack()|Engine.deleteAudioTrack(this)}:
          * 
          * Delete track, and remove it from the mixer. 
-         * After this is done, calling any method on the track will throw an `Error`.
+         * After this is done, calling any method on the track will throw an {@linkcode Error}.
          * 
-         * Returns a state that can be passed to `Engine.reconstructAudioTrack/s()`, to reconstruct this track.
+         * Returns a state that can be passed to {@linkcode Engine.reconstructAudioTrack()}/{@linkcode Engine.reconstructAudioTracks()|reconstructAudioTracks()}, 
+         * to reconstruct this track.
          */
         delete(): AudioTrackState
     }
@@ -183,13 +186,13 @@ declare module "adae-node" {
     }
 
     /**
-     * Scaling function used by Track.readMeter().
+     * Scaling function used by {@linkcode Track.readMeter()}.
      * 
      * Read only.
      */
     function meterScale(value: number): number
     /**
-     * Inverse of scaling used by Track.readMeter().
+     * Inverse of scaling used by {@linkcode Track.readMeter()}.
      * 
      * Useful for volume slider in proximity to a meter.
      */
@@ -205,7 +208,7 @@ declare module "adae-node" {
     /**
      * Rejects if the engine has crashed.
      * 
-     * Resolves when `stopListeningForCrash` is called. If this is never called, the process might hang.
+     * Resolves when {@linkcode stopListeningForCrash()} is called. If this is never called, the process might hang.
      * 
      * Whenever possible, crashes will be thrown as exceptions by the function that caused them.
      * This function only exists to catch crashes that happen in the realtime thread, which cannot otherwise be caught by the JS engine.
@@ -214,7 +217,7 @@ declare module "adae-node" {
      */
     function listenForCrash(): Promise<void>
     /**
-     * Makes `listenForCrash` resolve.
+     * Makes {@linkcode listenForCrash()} resolve.
      * 
      * This should be called when the engine is closed, to avoid hanging the process.
      */
