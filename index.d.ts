@@ -172,17 +172,33 @@ declare module "adae-node" {
     class Timestamp extends ExposedObject {
         #type: "Timestamp"
         private constructor()
+        
+        /** Return the smallest of the two timestamps */
+        static min(a: Timestamp, b: Timestamp): Timestamp
+        /** Return the largest of the two timestamps */
+        static max(a: Timestamp, b: Timestamp): Timestamp
+        /** Check whether the two timestamps are equal to each other */
+        static eq(a: Timestamp, b: Timestamp): boolean
 
+        /** 
+         * The smallest possible timestamp representing the very beginning (regardless of unit) 
+         */
         static zero(): Timestamp
+        /**
+         * The largest representable timestamp, convenient for comparisons.
+         * Converting this to anything other than beat units may overflow.
+         */
+        static infinity(): Timestamp
+
+        /** 1 beat = 1024 beat units */
         static fromBeatUnits(beatUnits: number): Timestamp
         static fromBeats(beats: number): Timestamp
         static fromSamples(samples: number, sampleRate: number, bpm: number): Timestamp
 
+        /** 1 beat = 1024 beat units */
         getBeatUnits(): number
         getBeats(): number
         getSamples(sampleRate: number, bpm: number): number
-        
-        equals(other: Timestamp): boolean
     }
 
     /**

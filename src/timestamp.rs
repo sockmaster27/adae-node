@@ -44,7 +44,37 @@ fn err_msg(property: &str, expected_to_be: &str, value: f64) -> String {
 }
 
 const STATIC_METHODS: &[(&str, Method)] = &[
+    ("min", |mut cx| {
+        let a_js = cx.argument::<JsObject>(0)?;
+        let a = timestamp(&mut cx, a_js)?;
+
+        let b_js = cx.argument::<JsObject>(1)?;
+        let b = timestamp(&mut cx, b_js)?;
+
+        construct(&mut cx, Timestamp::min(a, b))
+    }),
+    ("max", |mut cx| {
+        let a_js = cx.argument::<JsObject>(0)?;
+        let a = timestamp(&mut cx, a_js)?;
+
+        let b_js = cx.argument::<JsObject>(1)?;
+        let b = timestamp(&mut cx, b_js)?;
+
+        construct(&mut cx, Timestamp::max(a, b))
+    }),
+    ("eq", |mut cx| {
+        let a_js = cx.argument::<JsObject>(0)?;
+        let a = timestamp(&mut cx, a_js)?;
+
+        let b_js = cx.argument::<JsObject>(1)?;
+        let b = timestamp(&mut cx, b_js)?;
+
+        Ok(cx.boolean(a == b).upcast())
+    }),
     ("zero", |mut cx| construct(&mut cx, Timestamp::zero())),
+    ("infinity", |mut cx| {
+        construct(&mut cx, Timestamp::infinity())
+    }),
     ("fromBeatUnits", |mut cx| {
         let beat_units_js: Handle<JsNumber> = cx.argument(0)?;
         let beat_units_f64 = beat_units_js.value(&mut cx);
@@ -168,14 +198,5 @@ const METHODS: &[(&str, Method)] = &[
         let timestamp = timestamp(&mut cx, this)?;
         let beat_units = timestamp.samples(sample_rate, bpm_cents);
         Ok(cx.number(beat_units as f64).upcast())
-    }),
-    ("equals", |mut cx| {
-        let this_js = cx.this();
-        let this = timestamp(&mut cx, this_js)?;
-
-        let other_js = cx.argument::<JsObject>(0)?;
-        let other = timestamp(&mut cx, other_js)?;
-
-        Ok(cx.boolean(this == other).upcast())
     }),
 ];
