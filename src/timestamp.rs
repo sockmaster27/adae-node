@@ -37,10 +37,7 @@ impl Finalize for TimestampWrapper {}
 
 /// Example: `err_msg("beat", "greater than zero", -1.0)` -> `"Timestamp must have beat value greater than zero. Got -1"`
 fn err_msg(property: &str, expected_to_be: &str, value: f64) -> String {
-    format!(
-        "Timestamp must have {} value {}. Got {}",
-        property, expected_to_be, value
-    )
+    format!("Timestamp must have {property} value {expected_to_be}. Got {value}")
 }
 
 const STATIC_METHODS: &[(&str, Method)] = &[
@@ -70,6 +67,46 @@ const STATIC_METHODS: &[(&str, Method)] = &[
         let b = timestamp(&mut cx, b_js)?;
 
         Ok(cx.boolean(a == b).upcast())
+    }),
+    ("add", |mut cx| {
+        let a_js = cx.argument::<JsObject>(0)?;
+        let a = timestamp(&mut cx, a_js)?;
+
+        let b_js = cx.argument::<JsObject>(1)?;
+        let b = timestamp(&mut cx, b_js)?;
+
+        construct(&mut cx, a + b)
+    }),
+    ("sub", |mut cx| {
+        let a_js = cx.argument::<JsObject>(0)?;
+        let a = timestamp(&mut cx, a_js)?;
+
+        let b_js = cx.argument::<JsObject>(1)?;
+        let b = timestamp(&mut cx, b_js)?;
+
+        construct(&mut cx, a - b)
+    }),
+    ("mul", |mut cx| {
+        let ts_js = cx.argument::<JsObject>(0)?;
+        let ts = timestamp(&mut cx, ts_js)?;
+
+        let s_js = cx.argument::<JsNumber>(1)?;
+        let s_f64 = s_js.value(&mut cx);
+
+        if s_f64 < 0.0 {
+            return cx.throw_range_error(format!(
+                "Timestamp must be multiplied by a value greater than zero. Got {s_f64}"
+            ));
+        }
+        if (u32::MAX as f64) < s_f64 {
+            return cx.throw_range_error(format!(
+                "Timestamp must be multiplied by a value smaller than 2^32. Got {s_f64}"
+            ));
+        }
+
+        let s = s_f64 as u32;
+
+        construct(&mut cx, ts * s)
     }),
     ("zero", |mut cx| construct(&mut cx, Timestamp::zero())),
     ("infinity", |mut cx| {

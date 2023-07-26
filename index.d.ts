@@ -180,6 +180,20 @@ declare module "adae-node" {
         /** Check whether the two timestamps are equal to each other */
         static eq(a: Timestamp, b: Timestamp): boolean
 
+        /** Add `a` to `b` */
+        static add(a: Timestamp, b: Timestamp): Timestamp
+        /** 
+         * Subtract `b` from `a`. 
+         * Throws {@linkcode Error} if result is less than zero. 
+         */
+        static sub(a: Timestamp, b: Timestamp): Timestamp
+        /** 
+         * Multiplies timestamp `ts` with scalar `s`.
+         * `s` will be truncated to an integer, and a
+         * {@linkcode RangeError} will be thrown if `s` is less than zero. 
+         */
+        static mul(ts: Timestamp, s: number): Timestamp
+
         /** 
          * The smallest possible timestamp representing the very beginning (regardless of unit) 
          */
@@ -190,9 +204,22 @@ declare module "adae-node" {
          */
         static infinity(): Timestamp
 
-        /** 1 beat = 1024 beat units */
+        /** 
+         * Create timestamp from beat units.
+         * Parameter is truncated to an integer, and must be representable by a 32-bit unsigned integer.
+         * 
+         * 1 beat = 1024 beat units 
+         */
         static fromBeatUnits(beatUnits: number): Timestamp
+        /** 
+         * Create timestamp from beats.
+         * Parameter is truncated to an integer, and must be representable by a 32-bit unsigned integer.
+         */
         static fromBeats(beats: number): Timestamp
+        /** 
+         * Create timestamp from samples.
+         * `samples` parameter is truncated to an integer, and must be representable by a 64-bit unsigned integer.
+         */
         static fromSamples(samples: number, sampleRate: number, bpm: number): Timestamp
 
         /** 1 beat = 1024 beat units */
