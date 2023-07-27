@@ -15,8 +15,8 @@
     "jest": {
         "testRegex": "test.js$"
     },
-    "author": "",
-    "license": "ISC",
+    "author": "Holger Dal Mogensen",
+    "license": "MIT",
     "devDependencies": {
         "@types/jest": "^28.1.6",
         "@types/node": "^18.0.5",

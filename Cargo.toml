@@ -1,7 +1,8 @@
 [package]
 name = "adae-node"
 version = "0.1.0"
-license = "ISC"
+license = "MIT"
+authors = ["Holger Dal Mogensen"]
 edition = "2021"
 exclude = ["index.node"]
 publish = false
