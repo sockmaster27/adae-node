@@ -155,9 +155,14 @@ pub mod audio_track {
         }),
         ("addClip", |mut cx| {
             let audio_clip_js = cx.argument::<JsObject>(0)?;
-            let audio_clip_key = unpack(&mut cx, audio_clip_js, |_, &ack: &adae::AudioClipKey| {
-                Ok(ack)
-            })?;
+            let audio_clip_key = unpack(
+                &mut cx,
+                audio_clip_js,
+                |_, data: &(SharedEngine, adae::AudioClipKey)| {
+                    let (_, ack) = data;
+                    Ok(*ack)
+                },
+            )?;
 
             let start_js = cx.argument::<JsObject>(1)?;
             let start = timestamp(&mut cx, start_js)?;

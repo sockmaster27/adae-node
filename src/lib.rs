@@ -1,10 +1,10 @@
 //! Binding for Node.js' native addon API.
 
-mod clip;
 mod custom_output;
 mod encapsulator;
 mod panic_handling;
 mod shared_engine;
+mod stored_clip;
 mod timestamp;
 mod track;
 
@@ -12,13 +12,13 @@ use std::path::Path;
 
 use neon::prelude::*;
 
-use clip::audio_clip;
 use custom_output::get_debug;
 #[cfg(feature = "custom_debug_output")]
 use custom_output::output_debug;
 use encapsulator::{encapsulate, prevent_gc, unpack, unpack_this, Method};
 use panic_handling::{listen_for_crash, stop_listening_for_crash};
 use shared_engine::SharedEngine;
+use stored_clip::stored_audio_clip;
 use timestamp::timestamp;
 use track::{audio_track, master, AudioTrackStateWrapper};
 
@@ -249,7 +249,8 @@ const METHODS: &[(&str, Method)] = &[
                 let clip = engine
                     .import_audio_clip(Path::new(&path))
                     .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
-                let clip_js = audio_clip::construct(cx, clip)?;
+                let clip_js =
+                    stored_audio_clip::construct(cx, clip, SharedEngine::clone(shared_engine))?;
                 Ok(clip_js.as_value(cx))
             })
         })

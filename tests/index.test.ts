@@ -1,4 +1,6 @@
-const { Engine, Timestamp, inverseMeterScale, meterScale } = require("../../index.node"); // Relative to the destination
+const path = require("path");
+
+const { Engine, Timestamp, inverseMeterScale, meterScale, listenForCrash, stopListeningForCrash } = require("../../index.node"); // Relative to the destination
 
 
 
@@ -6,10 +8,17 @@ describe("Engine", () => {
     let engine: any;
     beforeEach(() => {
         engine = new Engine();
+        listenForCrash()
+            .catch((e: Error) => {throw e});
     });
     afterEach(() => {
         engine.close();
+        stopListeningForCrash();
     });
+
+    function importTestClip() {
+        return engine.importAudioClip(path.join(__dirname, "..", "..", "test_files", "48000 32-float.wav"));
+    }
 
     describe("Timeline", () => {
         test("play()", () => {
@@ -197,6 +206,11 @@ describe("Engine", () => {
                     expect(typeof track.key()).toBe("number");
                 });
 
+                test("addClip()", () => {
+                    const clip = importTestClip();
+                    track.addClip(clip, Timestamp.zero());
+                });
+
                 test("delete() deletes track", () => {
                     track.delete();
                     expect(() => engine.getAudioTrack(track.key())).toThrowError();
@@ -257,8 +271,27 @@ describe("Engine", () => {
     });
 
     describe("Audio clip", () => {
-        test("importAudioClip() exists", () => {
-            expect(typeof engine.importAudioClip).toBe("function");
+
+        test("importAudioClip()", () => {
+            expect(importTestClip()).toBeDefined();
+        });
+        test("importAudioClip() throws when file doesn't exist", () => {
+            expect(() => engine.importAudioClip("nonexistent")).toThrowError();
+        });
+
+        test("key()", () => {
+            const clip = importTestClip();
+            expect(clip.key()).toBeDefined();
+        });
+
+        test("sampleRate()", () => {
+            const clip = importTestClip();
+            expect(clip.sampleRate()).toBe(48_000);
+        });
+
+        test("length()", () => {
+            const clip = importTestClip();
+            expect(clip.length()).toBe(1_322_978);
         });
     });
 });

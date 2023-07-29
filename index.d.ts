@@ -165,8 +165,21 @@ declare module "adae-node" {
         key(): number
     }
     class StoredAudioClip extends StoredClip {
-        #type: "AudioClip"
+        #type: "StoredAudioClip"
         private constructor()
+
+        /**
+         * Original sample rate of the audio file.
+         */
+        sampleRate(): number
+
+        /**
+         * Get the full length of the clip in samples (per channel).
+         * 
+         * This is relative to the sample rate of the clip, which is not necessarily the same as the sample rate of the engine
+         * (See {@linkcode StoredAudioClip.sampleRate()}).
+         */
+        length(): number
     }
 
     class Timestamp extends ExposedObject {
