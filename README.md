@@ -15,3 +15,10 @@ The Node-API is supported in:
 -   Bun (partially)
 
 The library is implemented on top of [Neon](https://github.com/neon-bindings/neon#readme), so please refer to that for more granular information about supported platforms etc.
+
+## License
+
+adae-node is available under an [MIT license](./LICENSE).
+
+By contributing, you agree that your contributions will be licensed under the projects MIT License.
+
