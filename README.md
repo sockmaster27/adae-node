@@ -20,5 +20,5 @@ The library is implemented on top of [Neon](https://github.com/neon-bindings/neo
 
 adae-node is available under an [MIT license](./LICENSE).
 
-By contributing, you agree that your contributions will be licensed under the projects MIT License.
+By contributing, you agree that your contributions will be licensed under the project's MIT License.
 
