@@ -14,7 +14,7 @@ pub mod stored_audio_clip {
     /// The returned object must adhere to the interface defined in the `index.d.ts` file.
     pub fn construct<'a>(
         cx: &mut FunctionContext<'a>,
-        clip_key: adae::AudioClipKey,
+        clip_key: adae::StoredAudioClipKey,
         engine: SharedEngine,
     ) -> JsResult<'a, JsObject> {
         let object = encapsulate(cx, (engine, clip_key), &[], METHODS)?;
@@ -26,12 +26,12 @@ pub mod stored_audio_clip {
         callback: F,
     ) -> NeonResult<R>
     where
-        F: FnOnce(&mut CallContext<'a, JsObject>, Arc<adae::AudioClip>) -> NeonResult<R>,
+        F: FnOnce(&mut CallContext<'a, JsObject>, Arc<adae::StoredAudioClip>) -> NeonResult<R>,
     {
-        unpack_this(cx, |cx, data: &(SharedEngine, adae::AudioClipKey)| {
+        unpack_this(cx, |cx, data: &(SharedEngine, adae::StoredAudioClipKey)| {
             let (shared_engine, clip_key) = data;
             shared_engine.with_inner(cx, |cx, engine| {
-                let clip = engine.audio_clip(*clip_key).unwrap();
+                let clip = engine.stored_audio_clip(*clip_key).unwrap();
 
                 callback(cx, clip)
             })
@@ -40,10 +40,13 @@ pub mod stored_audio_clip {
 
     const METHODS: &[(&str, Method)] = &[
         ("key", |mut cx| {
-            unpack_this(&mut cx, |cx, data: &(SharedEngine, adae::AudioClipKey)| {
-                let &(_, clip_key) = data;
-                Ok(cx.number(clip_key).as_value(cx))
-            })
+            unpack_this(
+                &mut cx,
+                |cx, data: &(SharedEngine, adae::StoredAudioClipKey)| {
+                    let &(_, clip_key) = data;
+                    Ok(cx.number(clip_key).as_value(cx))
+                },
+            )
         }),
         ("sampleRate", |mut cx| {
             unpack_this_stored_clip(&mut cx, |cx, clip| {

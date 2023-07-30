@@ -158,7 +158,7 @@ pub mod audio_track {
             let audio_clip_key = unpack(
                 &mut cx,
                 audio_clip_js,
-                |_, data: &(SharedEngine, adae::AudioClipKey)| {
+                |_, data: &(SharedEngine, adae::StoredAudioClipKey)| {
                     let (_, ack) = data;
                     Ok(*ack)
                 },
