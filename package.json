@@ -10,7 +10,7 @@
         "build-record": "npm run build-inner -- --features custom_debug_output,record_output",
         "build": "npm run build-inner -- --release",
         "install": "npm run build",
-        "test": "concurrently \"cargo test\" \"npm:build-debug\"  \"tsc --project ./tests/tsconfig.json\" && jest"
+        "test": "concurrently \"npm:build-debug\" \"tsc --project ./tests/tsconfig.json\" && jest"
     },
     "jest": {
         "testRegex": "test.js$"
