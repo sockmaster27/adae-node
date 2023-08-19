@@ -12,6 +12,9 @@ declare module "adae-node" {
     class Engine extends ExposedObject {
         #type: "Engine"
 
+        /** Create a dummy engine, for testing purposes. */
+        static dummy(): Engine
+
         /** Create and initialize new engine. */
         constructor()
 

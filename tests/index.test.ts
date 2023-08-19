@@ -5,9 +5,21 @@ const { Engine, Timestamp, inverseMeterScale, meterScale, listenForCrash, stopLi
 
 
 describe("Engine", () => {
+    describe("Constructors", () => {
+        test("Default constructor", () => {
+            // We do not actually call this constructor, 
+            // because it might fail if run on a machine without a sound card
+            expect(typeof Engine).toBe("function");
+        });
+
+        test("Dummy constructor", () => {
+            expect(Engine.dummy()).toBeDefined();
+        });
+    });
+
     let engine: any;
     beforeEach(() => {
-        engine = new Engine();
+        engine = Engine.dummy();
         listenForCrash()
             .catch((e: Error) => {throw e});
     });
@@ -183,7 +195,7 @@ describe("Engine", () => {
                     expect(engine[method]).toThrowError();
 
                 // So cleanup can run
-                engine = new Engine();
+                engine = Engine.dummy();
             });
         });
 

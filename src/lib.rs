@@ -27,7 +27,12 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     #[cfg(feature = "custom_debug_output")]
     adae::set_output(output_debug);
 
-    cx.export_function("Engine", constructor)?;
+    let engine_class = JsFunction::new(&mut cx, constructor)?;
+    for (name, method) in STATIC_METHODS {
+        let method_js = JsFunction::new(&mut cx, *method)?;
+        engine_class.set(&mut cx, *name, method_js)?;
+    }
+    cx.export_value("Engine", engine_class)?;
 
     cx.export_function("meterScale", meter_scale)?;
     cx.export_function("inverseMeterScale", inverse_meter_scale)?;
@@ -49,7 +54,12 @@ fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
     Ok(object)
 }
 
-// Closures are used to put declarations inside list, but they should be coerced to fns.
+const STATIC_METHODS: &[(&str, Method)] = &[("dummy", |mut cx| {
+    let shared_engine = SharedEngine::dummy();
+    let object = encapsulate(&mut cx, shared_engine, &[], METHODS)?;
+    prevent_gc(&mut cx, object)?;
+    Ok(object.as_value(&mut cx))
+})];
 const METHODS: &[(&str, Method)] = &[
     ("play", |mut cx| {
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {

@@ -15,7 +15,11 @@ pub struct SharedEngine(
 );
 impl SharedEngine {
     pub fn new() -> Self {
-        Self(Arc::new(Mutex::new(Some(adae::Engine::new()))))
+        Self(Arc::new(Mutex::new(Some(adae::Engine::empty()))))
+    }
+
+    pub fn dummy() -> Self {
+        Self(Arc::new(Mutex::new(Some(adae::Engine::dummy_empty()))))
     }
 
     fn lock<'a, C>(&self, cx: &mut C) -> Result<MutexGuard<Option<adae::Engine>>, Throw>
