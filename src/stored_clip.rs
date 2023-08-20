@@ -55,7 +55,7 @@ pub mod stored_audio_clip {
         }),
         ("length", |mut cx| {
             unpack_this_stored_clip(&mut cx, |cx, clip| {
-                Ok(cx.number(clip.len() as f64).as_value(cx))
+                Ok(cx.number(clip.length() as f64).as_value(cx))
             })
         }),
     ];

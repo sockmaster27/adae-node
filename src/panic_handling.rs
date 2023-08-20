@@ -30,7 +30,7 @@ struct PanicHandler {
     deferred: Mutex<Option<Deferred>>,
 }
 impl PanicHandler {
-    fn settle_with<'a, F>(&self, f: F)
+    fn settle_with<F>(&self, f: F)
     where
         F: FnOnce(Deferred, TaskContext) -> NeonResult<()> + Send + 'static,
     {

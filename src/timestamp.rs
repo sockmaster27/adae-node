@@ -23,8 +23,8 @@ where
     Ok(encapsulate(cx, TimestampWrapper(timestamp), &[], METHODS)?.as_value(cx))
 }
 
-pub fn timestamp<'a>(
-    cx: &mut MethodContext<'a, JsObject>,
+pub fn timestamp(
+    cx: &mut MethodContext<'_, JsObject>,
     obj: Handle<JsObject>,
 ) -> NeonResult<Timestamp> {
     let boxed: Handle<JsBox<TimestampWrapper>> = obj.get(cx, encapsulator::DATA_KEY)?;

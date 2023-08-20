@@ -170,9 +170,9 @@ pub mod audio_track {
             let length_js_val = cx.argument_opt(2);
             let length_js = match length_js_val {
                 Some(val) => {
-                    if val.is_a::<JsNull, _>(&mut cx) {
-                        None
-                    } else if val.is_a::<JsUndefined, _>(&mut cx) {
+                    let is_null = val.is_a::<JsNull, _>(&mut cx);
+                    let is_undefined = val.is_a::<JsUndefined, _>(&mut cx);
+                    if is_null || is_undefined {
                         None
                     } else {
                         Some(val.downcast_or_throw(&mut cx)?)
