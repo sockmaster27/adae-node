@@ -1,13 +1,18 @@
 const path = require("path");
 
-const { Engine, Timestamp, inverseMeterScale, meterScale, listenForCrash, stopListeningForCrash } = require("../../index.node"); // Relative to the destination
-
-
+const {
+    Engine,
+    Timestamp,
+    inverseMeterScale,
+    meterScale,
+    listenForCrash,
+    stopListeningForCrash,
+} = require("../../index.node"); // Relative to the destination
 
 describe("Engine", () => {
     describe("Constructors", () => {
         test("Default constructor", () => {
-            // We do not actually call this constructor, 
+            // We do not actually call this constructor,
             // because it might fail if run on a machine without a sound card
             expect(typeof Engine).toBe("function");
         });
@@ -20,8 +25,9 @@ describe("Engine", () => {
     let engine: any;
     beforeEach(() => {
         engine = Engine.dummy();
-        listenForCrash()
-            .catch((e: Error) => {throw e});
+        listenForCrash().catch((e: Error) => {
+            throw e;
+        });
     });
     afterEach(() => {
         engine.close();
@@ -29,7 +35,15 @@ describe("Engine", () => {
     });
 
     function importTestClip() {
-        return engine.importAudioClip(path.join(__dirname, "..", "..", "test_files", "48000 32-float.wav"));
+        return engine.importAudioClip(
+            path.join(
+                __dirname,
+                "..",
+                "..",
+                "test_files",
+                "48000 32-float.wav",
+            ),
+        );
     }
 
     describe("Timeline", () => {
@@ -58,20 +72,22 @@ describe("Engine", () => {
         describe("Audio track addition and deletion", () => {
             function tracksEqual(track1: any, track2: any): [boolean, string] {
                 if (track1.key() !== track2.key())
-                    return [false, `Keys mismatched: ${track1.key()} != ${track2.key()}`];
+                    return [
+                        false,
+                        `Keys mismatched: ${track1.key()} != ${track2.key()}`,
+                    ];
 
                 let equal = true;
                 let reasons = [];
-                const relevantMethods = [
-                    "getVolume",
-                    "getPanning",
-                ];
+                const relevantMethods = ["getVolume", "getPanning"];
                 for (const method of relevantMethods) {
                     const result1 = track1[method]();
                     const result2 = track2[method]();
                     if (result1 !== result2) {
                         equal = false;
-                        reasons.push(`Result of calling ${method}() mismatched: ${result1} != ${result2}`);
+                        reasons.push(
+                            `Result of calling ${method}() mismatched: ${result1} != ${result2}`,
+                        );
                     }
                 }
 
@@ -83,8 +99,7 @@ describe("Engine", () => {
 
             function containsEqualAudioTrack(list: any[], track: any): boolean {
                 for (const listAudioTrack of list) {
-                    if (tracksEqual(listAudioTrack, track))
-                        return true;
+                    if (tracksEqual(listAudioTrack, track)) return true;
                 }
                 return false;
             }
@@ -109,7 +124,10 @@ describe("Engine", () => {
                 const newAudioTrack = engine.addAudioTrack();
                 expect(engine.getAudioTracks().length).toBe(before + 1);
                 expect(
-                    containsEqualAudioTrack(engine.getAudioTracks(), newAudioTrack)
+                    containsEqualAudioTrack(
+                        engine.getAudioTracks(),
+                        newAudioTrack,
+                    ),
                 ).toBe(true);
             });
 
@@ -119,9 +137,8 @@ describe("Engine", () => {
                 expect(engine.getAudioTracks().length).toBe(before + 5);
                 for (const track of newAudioTracks)
                     expect(
-                        containsEqualAudioTrack(engine.getAudioTracks(), track)
+                        containsEqualAudioTrack(engine.getAudioTracks(), track),
                     ).toBe(true);
-
             });
 
             test("Delete track", () => {
@@ -132,9 +149,7 @@ describe("Engine", () => {
                 expect(engine.getAudioTracks().length).toBe(before.length);
 
                 for (const track of engine.getAudioTracks())
-                    expect(
-                        containsEqualAudioTrack(before, track)
-                    ).toBe(true);
+                    expect(containsEqualAudioTrack(before, track)).toBe(true);
             });
 
             test("Delete multiple tracks", () => {
@@ -145,9 +160,7 @@ describe("Engine", () => {
                 expect(engine.getAudioTracks().length).toBe(before.length);
 
                 for (const track of engine.getAudioTracks())
-                    expect(
-                        containsEqualAudioTrack(before, track)
-                    ).toBe(true);
+                    expect(containsEqualAudioTrack(before, track)).toBe(true);
             });
 
             test("Reconstruct single track", () => {
@@ -159,9 +172,7 @@ describe("Engine", () => {
                 expect(engine.getAudioTracks().length).toBe(before.length);
 
                 for (const track of engine.getAudioTracks())
-                    expect(
-                        containsEqualAudioTrack(before, track)
-                    ).toBe(true);
+                    expect(containsEqualAudioTrack(before, track)).toBe(true);
             });
 
             test("Reconstruct multiple tracks", () => {
@@ -173,9 +184,7 @@ describe("Engine", () => {
                 expect(engine.getAudioTracks().length).toBe(before.length);
 
                 for (const track of engine.getAudioTracks())
-                    expect(
-                        containsEqualAudioTrack(before, track)
-                    ).toBe(true);
+                    expect(containsEqualAudioTrack(before, track)).toBe(true);
             });
 
             test("All methods throw when engine is closed", () => {
@@ -199,18 +208,17 @@ describe("Engine", () => {
             });
         });
 
-
         describe("Individual track", () => {
             let track: any;
 
             describe("Master track", () => {
-                beforeEach(() => track = engine.getMaster());
+                beforeEach(() => (track = engine.getMaster()));
 
                 testTrackCommon();
             });
 
             describe("Audio track", () => {
-                beforeEach(() => track = engine.addAudioTrack());
+                beforeEach(() => (track = engine.addAudioTrack()));
 
                 testTrackCommon();
 
@@ -225,7 +233,9 @@ describe("Engine", () => {
 
                 test("delete() deletes track", () => {
                     track.delete();
-                    expect(() => engine.getAudioTrack(track.key())).toThrowError();
+                    expect(() =>
+                        engine.getAudioTrack(track.key()),
+                    ).toThrowError();
                 });
 
                 test("All methods throw when track is deleted", () => {
@@ -264,9 +274,11 @@ describe("Engine", () => {
 
                     expect(typeof result).toBe("object");
 
-                    expect(
-                        Object.getOwnPropertyNames(result)
-                    ).toStrictEqual(["peak", "longPeak", "rms"]);
+                    expect(Object.getOwnPropertyNames(result)).toStrictEqual([
+                        "peak",
+                        "longPeak",
+                        "rms",
+                    ]);
 
                     for (const stat of Object.values(result))
                         expect((stat as any[]).length).toBe(2);
@@ -283,7 +295,6 @@ describe("Engine", () => {
     });
 
     describe("Audio clip", () => {
-
         test("importAudioClip()", () => {
             expect(importTestClip()).toBeDefined();
         });
@@ -309,7 +320,6 @@ describe("Engine", () => {
 });
 
 describe("Timestamp", () => {
-
     test("min", () => {
         const timestamp1 = Timestamp.fromBeatUnits(42);
         const timestamp2 = Timestamp.fromBeatUnits(43);

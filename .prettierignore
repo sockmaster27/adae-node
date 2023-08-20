@@ -1,0 +1,10 @@
+**/*.*
+!**/*.js
+!**/*.mjs
+!**/*.cjs
+!**/*.ts
+!**/*.json
+
+node_modules/
+target/
+tests/build/
