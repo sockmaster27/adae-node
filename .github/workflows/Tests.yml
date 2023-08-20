@@ -16,6 +16,8 @@ jobs:
               run: sudo apt-get install -y libasound2-dev
             - name: Install Dependencies
               run: npm i
+            - name: Check with Clippy
+              run: cargo clippy --all-targets --all-features -- -D warnings
             - name: Build
               run: npm run build-debug
             - name: Run Tests
