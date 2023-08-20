@@ -15,8 +15,11 @@ declare module "adae-node" {
         /** Create a dummy engine, for testing purposes. */
         static dummy(): Engine
 
-        /** Create and initialize new engine. */
+        /** Create and initialize new engine with the default config and state. */
         constructor()
+
+        /** Create and initialize new engine with the given configuration. */
+        constructor(config: config.Config)
 
         /**
          * Play timeline from the current playhead position.
@@ -281,4 +284,155 @@ declare module "adae-node" {
      * This should be called when the engine is closed, to avoid hanging the process.
      */
     function stopListeningForCrash(): void
+
+    module config {
+        /** 
+         * Configuration of the engine. 
+         */
+        class Config extends ExposedObject {
+            /**
+             * Get a reasonable default configuration.
+             */
+            static default(): Config
+
+            constructor(
+                outputDevice: OutputDevice,
+                outputConfig: OutputConfig,
+            )
+        }
+
+        /** 
+         * Configuration of the output stream of the engine.
+         * 
+         * All values should be chosen from a {@linkcode OutputConfigRange} reported by the specific {@linkcode OutputDevice},
+         * through either {@linkcode OutputDevice.supportedConfigRanges()} or {@linkcode OutputDevice.defaultConfigRange()}.
+         */
+        interface OutputConfig {
+            /**
+             * The number of channels to output, i.e. 1 = mono and 2 = stereo.
+             * 
+             * This setting has no impact on the number of channels used internally.
+             * This is converted right before the samples are sent to the output device.
+             */
+            channels: number
+            /**
+             * The format of the output samples.
+             * 
+             * This setting has no impact on the format used internally, which is a mix of 32- and 64-bit floating point.
+             * This is converted right before the samples are sent to the output device.
+             */
+            sampleFormat: SampleFormat
+            /**
+             * The sample rate in Hz.
+             * 
+             * This is used both internally and for the output device.
+             */
+            sampleRate: number
+            /**
+             * The size of the internal buffers in samples.
+             * If `null`, the default is used.
+             */
+            bufferSize: number | null
+        }
+
+        /**
+         * A range of valid values for a specific output device.
+         * 
+         * This can be used to construct a valid {@linkcode OutputConfig} for a specific {@linkcode OutputDevice}.
+         */
+        class OutputConfigRange extends ExposedObject {
+            #type: "OutputConfigRange"
+            private constructor()
+
+            channels(): number
+            sampleFormat(): SampleFormat
+            sampleRate(): { min: number, max: number }
+            bufferSize(): { min: number, max: number } | null
+
+            /**
+             * Get a reasonable default {@linkcode OutputConfig} for this range.
+             */
+            defaultConfig(): OutputConfig
+        }
+
+        enum SampleFormat {
+            Int8 = "i8",
+            Int16 = "i16",
+            Int32 = "i32",
+            Int64 = "i64",
+            IntUnsigned8 = "u8",
+            IntUnsigned16 = "u16",
+            IntUnsigned32 = "u32",
+            IntUnsigned64 = "u64",
+            Float32 = "f32",
+            Float64 = "f64",
+        }
+
+        /**
+         * A host is a specific audio backend, e.g. CoreAudio on macOS or WASAPI on Windows.
+         * 
+         * A host can have zero, one or multiple {@linkcode OutputDevice}s, which are the actual audio devices that can be used.
+         */
+        class Host extends ExposedObject {
+            #type: "Host"
+            private constructor()
+
+            /**
+             * Get an array of all available hosts.
+             */
+            static available(): Host[]
+            /**
+             * Get the default host.
+             */
+            static default(): Host | null
+            /**
+             * Get a host by name.
+             * 
+             * Returns `null` if no host with the given name exists.
+             */
+            static fromName(name: string): Host | null
+
+            /**
+             * Get the name of the host.
+             */
+            name(): string
+            /**
+             * Get an array of all available output devices for this host.
+             * Might be empty.
+             */
+            outputDevices(): OutputDevice[]
+            /**
+             * Get the default output device for this host.
+             */
+            defaultOutputDevice(): OutputDevice | null
+        }
+
+        /**
+         * An output device is a specific audio device that can be used for output.
+         * 
+         * It can be retrieved from a {@linkcode Host} through either {@linkcode Host.outputDevices()} or {@linkcode Host.defaultOutputDevice()}.
+         */
+        class OutputDevice extends ExposedObject {
+            #type: "OutputDevice"
+            private constructor()
+
+            /**
+             * Get the host that this output device belongs to.
+             */
+            host(): Host
+            /**
+             * Get the name of the output device.
+             */
+            name(): string
+            /**
+             * Get an array of all supported {@linkcode OutputConfigRange}s for this output device.
+             */
+            supportedConfigRanges(): OutputConfigRange[]
+            /**
+             * Get the default {@linkcode OutputConfigRange} for this output device.
+             */
+            defaultConfigRange(): OutputConfigRange | null
+        }
+    }
+
 }
