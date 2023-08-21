@@ -8,12 +8,16 @@ pub fn class<'a, C>(cx: &mut C) -> JsResult<'a, JsValue>
 where
     C: Context<'a>,
 {
-    let class_obj = cx.empty_object();
+    let class = JsFunction::new(cx, |mut cx| {
+        cx.throw_error::<_, Handle<JsValue>>(
+            "Timestamp cannot be constructed directly. Use the static methods instead.",
+        )
+    })?;
     for (name, method) in STATIC_METHODS {
         let method_js = JsFunction::new(cx, *method)?;
-        class_obj.set(cx, *name, method_js)?;
+        class.set(cx, *name, method_js)?;
     }
-    Ok(class_obj.as_value(cx))
+    Ok(class.as_value(cx))
 }
 
 pub fn construct<'a, C>(cx: &mut C, timestamp: Timestamp) -> JsResult<'a, JsValue>

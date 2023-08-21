@@ -34,8 +34,6 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     }
     cx.export_value("Engine", engine_class)?;
 
-
-    
     cx.export_function("meterScale", meter_scale)?;
     cx.export_function("inverseMeterScale", inverse_meter_scale)?;
     cx.export_function("getDebugOutput", get_debug)?;
