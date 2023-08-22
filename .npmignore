@@ -1,0 +1,9 @@
+.cargo
+.github
+.vscode
+test_files
+tests
+.gitignore
+.prettierignore
+.prettierrc
+index.node
