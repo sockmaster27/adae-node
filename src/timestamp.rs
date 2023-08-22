@@ -70,7 +70,7 @@ const STATIC_METHODS: &[(&str, Method)] = &[
         let b_js = cx.argument::<JsObject>(1)?;
         let b = timestamp(&mut cx, b_js)?;
 
-        Ok(cx.boolean(a == b).upcast())
+        Ok(cx.boolean(a == b).as_value(&mut cx))
     }),
     ("add", |mut cx| {
         let a_js = cx.argument::<JsObject>(0)?;
@@ -196,13 +196,13 @@ const METHODS: &[(&str, Method)] = &[
         let this = cx.this();
         let timestamp = timestamp(&mut cx, this)?;
         let beat_units = timestamp.beat_units();
-        Ok(cx.number(beat_units as f64).upcast())
+        Ok(cx.number(beat_units as f64).as_value(&mut cx))
     }),
     ("getBeats", |mut cx| {
         let this = cx.this();
         let timestamp = timestamp(&mut cx, this)?;
         let beat_units = timestamp.beats();
-        Ok(cx.number(beat_units as f64).upcast())
+        Ok(cx.number(beat_units as f64).as_value(&mut cx))
     }),
     ("getSamples", |mut cx| {
         let this = cx.this();
@@ -238,6 +238,6 @@ const METHODS: &[(&str, Method)] = &[
 
         let timestamp = timestamp(&mut cx, this)?;
         let beat_units = timestamp.samples(sample_rate, bpm_cents);
-        Ok(cx.number(beat_units as f64).upcast())
+        Ok(cx.number(beat_units as f64).as_value(&mut cx))
     }),
 ];
