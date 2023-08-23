@@ -37,7 +37,9 @@ pub fn output_debug(msg: String) {
     let awaiting = RESOLVER.lock().expect(ERR_MSG).take();
     match awaiting {
         Some((channel, deferred)) => {
-            channel.send(move |mut cx| {
+            // Try to send the task to the event loop.
+            // This might fail if the process is shutting down.
+            let _ = channel.try_send(move |mut cx| {
                 let msg = cx.string(msg);
                 deferred.resolve(&mut cx, msg);
                 Ok(())

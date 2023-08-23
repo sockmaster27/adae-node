@@ -37,7 +37,9 @@ impl PanicHandler {
         let mutex_res = self.deferred.lock();
         if let Ok(mut def_opt) = mutex_res {
             if let Some(deferred) = def_opt.take() {
-                self.channel.send(move |cx| f(deferred, cx));
+                self.channel
+                    .try_send(move |cx| f(deferred, cx))
+                    .expect("Failed to panic");
             }
         }
     }
