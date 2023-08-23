@@ -15,11 +15,15 @@ declare module "adae-node" {
         /** Create a dummy engine, for testing purposes. */
         static dummy(): Engine;
 
-        /** Create and initialize new engine with the default config and state. */
-        constructor();
+        /**
+         * Create and initialize new engine with the given configuration.
+         *
+         * If no configuration is given, the default configuration is used.
+         */
+        constructor(config?: config.Config);
 
-        /** Create and initialize new engine with the given configuration. */
-        constructor(config: config.Config);
+        /** Restart the engine with the given config. */
+        setConfig(config: config.Config): void;
 
         /**
          * Play timeline from the current playhead position.

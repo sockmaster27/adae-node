@@ -80,6 +80,17 @@ const STATIC_METHODS: &[(&str, Method)] = &[("dummy", |mut cx| {
     Ok(object.as_value(&mut cx))
 })];
 const METHODS: &[(&str, Method)] = &[
+    ("setConfig", |mut cx| {
+        let config_js = cx.argument(0)?;
+        config::config_class::unpack(&mut cx, config_js, |cx, config| {
+            unpack_this(cx, |cx, shared_engine: &SharedEngine| {
+                shared_engine.with_inner(cx, |cx, engine| {
+                    engine.set_config(config);
+                    Ok(cx.undefined().as_value(cx))
+                })
+            })
+        })
+    }),
     ("play", |mut cx| {
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
