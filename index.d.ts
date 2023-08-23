@@ -295,7 +295,7 @@ declare module "adae-node" {
      */
     function stopListeningForCrash(): void;
 
-    module config {
+    namespace config {
         /**
          * Configuration of the engine.
          */
