@@ -52,7 +52,22 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
 /// The returned object must adhere to the interface defined in the `index.d.ts` file.
 fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let shared_engine = SharedEngine::new();
+    let config_js = cx.argument_opt(0);
+    let shared_engine = match config_js {
+        Some(config_js) => {
+            let config_obj: Handle<JsObject> = config_js.downcast_or_throw(&mut cx)?;
+            config::config_class::unpack(&mut cx, config_obj, |_, config| {
+                let (engine, import_errors) = SharedEngine::new(config);
+                debug_assert!(
+                    import_errors.is_empty(),
+                    "Import errors: {:?}",
+                    import_errors
+                );
+                Ok(engine)
+            })?
+        }
+        None => SharedEngine::empty(),
+    };
     let object = encapsulate(&mut cx, shared_engine, &[], METHODS)?;
     prevent_gc(&mut cx, object)?;
     Ok(object)

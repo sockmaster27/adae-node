@@ -14,8 +14,13 @@ pub struct SharedEngine(
     Arc<Mutex<Option<adae::Engine>>>,
 );
 impl SharedEngine {
-    pub fn new() -> Self {
+    pub fn empty() -> Self {
         Self(Arc::new(Mutex::new(Some(adae::Engine::empty()))))
+    }
+
+    pub fn new(config: &adae::config::Config) -> (Self, Vec<adae::error::ImportError>) {
+        let (engine, import_errors) = adae::Engine::new(config, &adae::EngineState::default());
+        (Self(Arc::new(Mutex::new(Some(engine)))), import_errors)
     }
 
     pub fn dummy() -> Self {

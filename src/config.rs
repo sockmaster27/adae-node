@@ -15,7 +15,7 @@ pub fn module<'a>(cx: &mut ModuleContext<'a>) -> JsResult<'a, JsObject> {
     Ok(module)
 }
 
-mod config_class {
+pub mod config_class {
     use super::*;
 
     pub fn constructor<'a, C>(cx: &mut C) -> JsResult<'a, JsFunction>
@@ -53,10 +53,21 @@ mod config_class {
         Ok(encapsulate(cx, ConfigWrapper(config), &[], &[])?.as_value(cx))
     }
 
+    pub fn unpack<'a, C, F, R>(cx: &mut C, obj: Handle<'a, JsObject>, callback: F) -> NeonResult<R>
+    where
+        C: Context<'a>,
+        F: FnOnce(&mut C, &adae::config::Config) -> Result<R, Throw>,
+    {
+        encapsulator::unpack(cx, obj, |cx, config: &ConfigWrapper| {
+            callback(cx, &config.0)
+        })
+    }
+
     const STATIC_METHODS: &[(&str, Method)] = &[("default", |mut cx| {
         construct(&mut cx, adae::config::Config::default())
     })];
 
+    #[derive(Debug)]
     struct ConfigWrapper(adae::config::Config);
     impl Finalize for ConfigWrapper {}
 }
