@@ -364,7 +364,7 @@ mod host {
             unpack_this(&mut cx, |cx, host| {
                 let output_devices = host
                     .output_devices()
-                    .unwrap()
+                    .or_else(|e| cx.throw_error(format!("{e}")))?
                     .map(|device| output_device::construct(cx, device))
                     .collect::<Result<Vec<_>, _>>()?;
                 let output_devices_js = cx.empty_array();
@@ -376,7 +376,13 @@ mod host {
         }),
         ("defaultOutputDevice", |mut cx| {
             unpack_this(&mut cx, |cx, host| {
-                let output_device = host.default_output_device().unwrap();
+                let output_device_opt = host
+                    .default_output_device()
+                    .or_else(|e| cx.throw_error(format!("{e}")))?;
+                let output_device = match output_device_opt {
+                    None => cx.throw_error("No default output device"),
+                    Some(output_device) => Ok(output_device),
+                }?;
                 let output_device_js = output_device::construct(cx, output_device)?;
                 Ok(output_device_js.as_value(cx))
             })
@@ -438,7 +444,7 @@ mod output_device {
             unpack_this(&mut cx, |cx, device| {
                 let supported_config_ranges = device
                     .supported_config_ranges()
-                    .unwrap()
+                    .or_else(|e| cx.throw_error(format!("{e}")))?
                     .map(|range| output_config_range::construct(cx, range))
                     .collect::<Result<Vec<_>, _>>()?;
                 let supported_config_ranges_js = cx.empty_array();
@@ -451,9 +457,12 @@ mod output_device {
             })
         }),
         ("defaultConfigRange", |mut cx| {
-            unpack_this(&mut cx, |cx, device| match device.default_config_range() {
-                None => Ok(cx.null().as_value(cx)),
-                Some(range) => Ok(output_config_range::construct(cx, range)?.as_value(cx)),
+            unpack_this(&mut cx, |cx, device| {
+                let range = device
+                    .default_config_range()
+                    .or_else(|e| cx.throw_error(format!("{e}")))?;
+
+                Ok(output_config_range::construct(cx, range)?.as_value(cx))
             })
         }),
     ];
