@@ -1,5 +1,6 @@
 //! Binding for Node.js' native addon API.
 
+mod config;
 mod custom_output;
 mod encapsulator;
 mod panic_handling;
@@ -42,6 +43,9 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     let timestamp_class = timestamp::class(&mut cx)?;
     cx.export_value("Timestamp", timestamp_class)?;
+
+    let config_module = config::module(&mut cx)?;
+    cx.export_value("config", config_module)?;
 
     Ok(())
 }

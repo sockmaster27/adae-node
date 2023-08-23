@@ -391,13 +391,7 @@ declare module "adae-node" {
             /**
              * Get the default host.
              */
-            static default(): Host | null;
-            /**
-             * Get a host by name.
-             *
-             * Returns `null` if no host with the given name exists.
-             */
-            static fromName(name: string): Host | null;
+            static default(): Host;
 
             /**
              * Get the name of the host.
