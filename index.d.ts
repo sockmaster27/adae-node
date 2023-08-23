@@ -304,6 +304,8 @@ declare module "adae-node" {
          * Configuration of the engine.
          */
         class Config extends ExposedObject {
+            #type: "Config";
+
             /**
              * Get a reasonable default configuration.
              */
@@ -436,7 +438,7 @@ declare module "adae-node" {
             /**
              * Get the default {@linkcode OutputConfigRange} for this output device.
              */
-            defaultConfigRange(): OutputConfigRange | null;
+            defaultConfigRange(): OutputConfigRange;
         }
     }
 }
