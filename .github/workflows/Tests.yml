@@ -20,7 +20,7 @@ jobs:
             - name: Install ALSA
               run: sudo apt-get install -y libasound2-dev
             - name: Install Dependencies
-              run: npm i
+              run: npm ci
             - name: Check with Clippy
               run: |
                   cargo update
