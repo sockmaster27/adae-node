@@ -12,6 +12,9 @@ pub fn module<'a>(cx: &mut ModuleContext<'a>) -> JsResult<'a, JsObject> {
     let host_constructor = host::constructor(cx)?;
     module.set(cx, "Host", host_constructor)?;
 
+    let sample_format_obj = sample_format::object(cx)?;
+    module.set(cx, "SampleFormat", sample_format_obj)?;
+
     Ok(module)
 }
 
@@ -246,6 +249,33 @@ mod output_config_range {
 
 mod sample_format {
     use super::*;
+
+    pub fn object<'a, C>(cx: &mut C) -> JsResult<'a, JsObject>
+    where
+        C: Context<'a>,
+    {
+        let obj = cx.empty_object();
+
+        let fields = [
+            ("Int8", "i8"),
+            ("Int16", "i16"),
+            ("Int32", "i32"),
+            ("Int64", "i64"),
+            ("IntUnsigned8", "u8"),
+            ("IntUnsigned16", "u16"),
+            ("IntUnsigned32", "u32"),
+            ("IntUnsigned64", "u64"),
+            ("Float32", "f32"),
+            ("Float64", "f64"),
+        ];
+
+        for (name, val) in fields.iter() {
+            let str = cx.string(*val);
+            obj.set(cx, *name, str)?;
+        }
+
+        Ok(obj)
+    }
 
     pub fn construct<'a, C>(
         cx: &mut C,
