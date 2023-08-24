@@ -115,7 +115,7 @@ mod output_config {
         let channels_js: Handle<JsNumber> = output_config_js.get(cx, "channels")?;
         let sample_format_js: Handle<JsString> = output_config_js.get(cx, "sampleFormat")?;
         let sample_rate_js: Handle<JsNumber> = output_config_js.get(cx, "sampleRate")?;
-        let buffer_size_js: Handle<JsNumber> = output_config_js.get(cx, "bufferSize")?;
+        let buffer_size_js: Handle<JsValue> = output_config_js.get(cx, "bufferSize")?;
 
         let channels_f64 = channels_js.value(cx);
         if (channels_f64 < 0.0) || ((u16::MAX as f64) < channels_f64) {
@@ -138,7 +138,8 @@ mod output_config {
         let buffer_size = if buffer_size_js.is_a::<JsNull, _>(cx) {
             None
         } else {
-            let buffer_size_f64 = buffer_size_js.value(cx);
+            let buffer_size_number: Handle<JsNumber> = buffer_size_js.downcast_or_throw(cx)?;
+            let buffer_size_f64 = buffer_size_number.value(cx);
             if (buffer_size_f64 < 0.0) || ((u32::MAX as f64) < buffer_size_f64) {
                 return cx.throw_error(format!(
                     "Buffer size must be an integer representable as an unsigned 32-bit integer. Got {buffer_size_f64:?}"
