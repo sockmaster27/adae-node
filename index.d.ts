@@ -150,7 +150,7 @@ declare module "adae-node" {
             clip: StoredAudioClip,
             start: Timestamp,
             length?: Timestamp,
-        ): void;
+        ): AudioClip;
 
         /**
          * Alias for {@linkcode Engine.deleteAudioTrack()|Engine.deleteAudioTrack(this)}:
@@ -196,6 +196,18 @@ declare module "adae-node" {
          * (See {@linkcode StoredAudioClip.sampleRate()}).
          */
         length(): number;
+    }
+
+    abstract class Clip extends ExposedObject {
+        key(): number;
+
+        start(): Timestamp;
+        length(): Timestamp;
+        end(): Timestamp;
+    }
+    class AudioClip extends Clip {
+        #type: "AudioClip";
+        private constructor();
     }
 
     class Timestamp extends ExposedObject {
