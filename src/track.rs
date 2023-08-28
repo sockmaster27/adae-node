@@ -190,13 +190,13 @@ pub mod audio_track {
                 |cx, (shared_engine, audio_track): &(SharedEngine, AudioTrackWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
-                            .add_clip(
+                            .add_audio_clip(
                                 audio_track.timeline_track_key(),
                                 audio_clip_key,
                                 start,
                                 length,
                             )
-                            .or_else(|e| cx.throw_error(format!("{}", &e)))?;
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                         Ok(cx.undefined().as_value(cx))
                     })
