@@ -202,8 +202,7 @@ declare module "adae-node" {
         key(): number;
 
         start(): Timestamp;
-        length(): Timestamp;
-        end(): Timestamp;
+        length(): Timestamp | null;
     }
     class AudioClip extends Clip {
         #type: "AudioClip";

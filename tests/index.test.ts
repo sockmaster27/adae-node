@@ -294,7 +294,7 @@ describe("Engine", () => {
         });
     });
 
-    describe("Audio clip", () => {
+    describe("Stored audio clip", () => {
         test("importAudioClip()", () => {
             expect(importTestClip()).toBeDefined();
         });
@@ -315,6 +315,36 @@ describe("Engine", () => {
         test("length()", () => {
             const clip = importTestClip();
             expect(clip.length()).toBe(1_322_978);
+        });
+    });
+
+    describe("Timeline audio clip", () => {
+        let clip: any;
+
+        beforeEach(() => {
+            const track = engine.addAudioTrack();
+            clip = track.addClip(
+                importTestClip(),
+                Timestamp.fromBeats(1),
+                Timestamp.fromBeats(2),
+            );
+        });
+
+        test("key()", () => {
+            expect(typeof clip.key()).toBe("number");
+        });
+
+        test("start()", () => {
+            expect(clip.start().getBeats()).toBe(1);
+        });
+        test("length()", () => {
+            expect(clip.length().getBeats()).toBe(2);
+        });
+
+        test("length() null", () => {
+            const track = engine.addAudioTrack();
+            clip = track.addClip(importTestClip(), Timestamp.fromBeats(1));
+            expect(clip.length()).toBeNull();
         });
     });
 });

@@ -1,5 +1,6 @@
 //! Binding for Node.js' native addon API.
 
+mod clip;
 mod config;
 mod custom_output;
 mod encapsulator;

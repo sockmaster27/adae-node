@@ -1,7 +1,11 @@
-use std::ops::Deref;
-
 use neon::prelude::*;
+use std::ops::Deref;
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
+use crate::{clip::audio_clip, encapsulator::unpack, timestamp::timestamp};
 use crate::{
     encapsulator::{encapsulate, unpack_this, Method},
     shared_engine::SharedEngine,
@@ -44,13 +48,6 @@ pub mod master {
 }
 
 pub mod audio_track {
-    use std::{
-        collections::hash_map::DefaultHasher,
-        hash::{Hash, Hasher},
-    };
-
-    use crate::{encapsulator::unpack, timestamp::timestamp};
-
     use super::*;
 
     /// The returned object must adhere to the interface defined in the `index.d.ts` file.
@@ -189,7 +186,7 @@ pub mod audio_track {
                 &mut cx,
                 |cx, (shared_engine, audio_track): &(SharedEngine, AudioTrackWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
-                        engine
+                        let key = engine
                             .add_audio_clip(
                                 audio_track.timeline_track_key(),
                                 audio_clip_key,
@@ -198,7 +195,13 @@ pub mod audio_track {
                             )
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
 
-                        Ok(cx.undefined().as_value(cx))
+                        Ok(audio_clip::construct(
+                            cx,
+                            audio_track.timeline_track_key(),
+                            key,
+                            shared_engine.clone(),
+                        )?
+                        .as_value(cx))
                     })
                 },
             )
