@@ -5,10 +5,10 @@ use crate::encapsulator::encapsulate;
 use crate::encapsulator::unpack_this;
 use crate::encapsulator::Method;
 use crate::shared_engine::SharedEngine;
+use crate::stored_clip::stored_audio_clip;
 use crate::timestamp;
 
 pub mod audio_clip {
-
     use super::*;
 
     pub fn construct<'a>(
@@ -48,10 +48,12 @@ pub mod audio_clip {
 
     const METHODS: &[(&str, Method)] = &[
         ("key", |mut cx| {
-            unpack_this(&mut cx, |cx, (_, _, key): &(SharedEngine, 
-                adae::TimelineTrackKey,adae::AudioClipKey)| {
-                Ok(cx.number(*key).as_value(cx))
-            })
+            unpack_this(
+                &mut cx,
+                |cx, (_, _, key): &(SharedEngine, adae::TimelineTrackKey, adae::AudioClipKey)| {
+                    Ok(cx.number(*key).as_value(cx))
+                },
+            )
         }),
         ("start", |mut cx| {
             unpack_this_clip(&mut cx, |cx, clip| timestamp::construct(cx, clip.start))
@@ -61,6 +63,30 @@ pub mod audio_clip {
                 Some(length) => timestamp::construct(cx, length),
                 None => Ok(cx.null().upcast()),
             })
+        }),
+        ("storedClip", |mut cx| {
+            encapsulator::unpack_this(
+                &mut cx,
+                |cx,
+                 (shared_engine, track_key, clip_key): &(
+                    SharedEngine,
+                    adae::TimelineTrackKey,
+                    adae::AudioClipKey,
+                )| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        let clip = engine
+                            .audio_clip(*track_key, *clip_key)
+                            .expect("AudioTrackWrapper should have a clip");
+
+                        Ok(stored_audio_clip::construct(
+                            cx,
+                            clip.stored_clip(),
+                            shared_engine.clone(),
+                        )?
+                        .as_value(cx))
+                    })
+                },
+            )
         }),
     ];
 }

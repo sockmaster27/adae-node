@@ -337,6 +337,7 @@ describe("Engine", () => {
         test("start()", () => {
             expect(clip.start().getBeats()).toBe(1);
         });
+
         test("length()", () => {
             expect(clip.length().getBeats()).toBe(2);
         });
@@ -345,6 +346,10 @@ describe("Engine", () => {
             const track = engine.addAudioTrack();
             clip = track.addClip(importTestClip(), Timestamp.fromBeats(1));
             expect(clip.length()).toBeNull();
+        });
+
+        test("storedClip()", () => {
+            expect(clip.storedClip()).toBeDefined();
         });
     });
 });

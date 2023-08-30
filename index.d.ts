@@ -203,10 +203,14 @@ declare module "adae-node" {
 
         start(): Timestamp;
         length(): Timestamp | null;
+
+        storedClip(): StoredClip;
     }
     class AudioClip extends Clip {
         #type: "AudioClip";
         private constructor();
+
+        storedClip(): StoredAudioClip;
     }
 
     class Timestamp extends ExposedObject {
