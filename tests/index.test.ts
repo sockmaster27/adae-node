@@ -355,39 +355,39 @@ describe("Engine", () => {
 });
 
 describe("Timestamp", () => {
-    test("min", () => {
+    test("min()", () => {
         const timestamp1 = Timestamp.fromBeatUnits(42);
         const timestamp2 = Timestamp.fromBeatUnits(43);
         expect(Timestamp.min(timestamp1, timestamp2).getBeatUnits()).toBe(42);
     });
-    test("max", () => {
+    test("max()", () => {
         const timestamp1 = Timestamp.fromBeatUnits(42);
         const timestamp2 = Timestamp.fromBeatUnits(43);
         expect(Timestamp.max(timestamp1, timestamp2).getBeatUnits()).toBe(43);
     });
-    test("equals", () => {
+    test("eq()", () => {
         const timestamp1 = Timestamp.fromBeatUnits(42);
         const timestamp2 = Timestamp.fromBeatUnits(42);
         expect(Timestamp.eq(timestamp1, timestamp2)).toBe(true);
     });
-    test("not equals", () => {
+    test("eq() not equals", () => {
         const timestamp1 = Timestamp.fromBeatUnits(42);
         const timestamp2 = Timestamp.fromBeatUnits(43);
         expect(Timestamp.eq(timestamp1, timestamp2)).toBe(false);
     });
 
-    test("add", () => {
+    test("add()", () => {
         const timestamp1 = Timestamp.fromBeatUnits(42);
         const timestamp2 = Timestamp.fromBeatUnits(43);
         expect(Timestamp.add(timestamp1, timestamp2).getBeatUnits()).toBe(85);
     });
-    test("sub", () => {
+    test("sub()", () => {
         const timestamp1 = Timestamp.fromBeatUnits(43);
         const timestamp2 = Timestamp.fromBeatUnits(42);
         expect(Timestamp.sub(timestamp1, timestamp2).getBeatUnits()).toBe(1);
         expect(() => Timestamp.sub(timestamp2, timestamp1)).toThrowError();
     });
-    test("mul", () => {
+    test("mul()", () => {
         const timestamp = Timestamp.fromBeatUnits(42);
         expect(Timestamp.mul(timestamp, 2).getBeatUnits()).toBe(84);
         expect(Timestamp.mul(timestamp, 2.8).getBeatUnits()).toBe(84);
