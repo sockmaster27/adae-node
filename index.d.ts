@@ -187,6 +187,12 @@ declare module "adae-node" {
         ): AudioClip;
 
         /**
+         * Delete clip from track.
+         * After this is done, calling any method on the clip will throw an {@linkcode Error}.
+         */
+        deleteClip(clip: AudioClip): void;
+
+        /**
          * Alias for {@linkcode Engine.deleteAudioTrack()|Engine.deleteAudioTrack(this)}:
          *
          * Delete track, and remove it from the mixer.
@@ -261,6 +267,12 @@ declare module "adae-node" {
          * Get the referenced stored clip.
          */
         storedClip(): StoredClip;
+
+        /**
+         * Delete clip from track.
+         * After this is done, calling any method on the clip will throw an {@linkcode Error}.
+         */
+        delete(): void;
     }
     /**
      * An audio clip that has been added to the timeline.

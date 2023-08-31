@@ -227,8 +227,17 @@ describe("Engine", () => {
                 });
 
                 test("addClip()", () => {
-                    const clip = importTestClip();
-                    track.addClip(clip, Timestamp.zero());
+                    const storedClip = importTestClip();
+                    track.addClip(storedClip, Timestamp.zero());
+                });
+
+                test("deleteClip()", () => {
+                    const storedClip = importTestClip();
+                    const timelineClip = track.addClip(
+                        storedClip,
+                        Timestamp.zero(),
+                    );
+                    track.deleteClip(timelineClip);
                 });
 
                 test("delete() deletes track", () => {
@@ -250,6 +259,7 @@ describe("Engine", () => {
 
                         "key",
                         "addClip",
+                        "deleteClip",
                         "delete",
                     ];
 
@@ -350,6 +360,13 @@ describe("Engine", () => {
 
         test("storedClip()", () => {
             expect(clip.storedClip()).toBeDefined();
+        });
+
+        test("delete()", () => {
+            clip.delete();
+            const methods = ["key", "start", "length", "storedClip", "delete"];
+
+            for (const method of methods) expect(clip[method]).toThrowError();
         });
     });
 });

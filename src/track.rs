@@ -206,6 +206,26 @@ pub mod audio_track {
                 },
             )
         }),
+        ("deleteClip", |mut cx| {
+            let clip_js = cx.argument::<JsObject>(0)?;
+            unpack(
+                &mut cx,
+                clip_js,
+                |cx,
+                 (shared_engine, track_key, clip_key): &(
+                    SharedEngine,
+                    adae::TimelineTrackKey,
+                    adae::AudioClipKey,
+                )| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        engine
+                            .delete_audio_clip(*track_key, *clip_key)
+                            .or_else(|e| cx.throw_error(format!("{}", &e)))?;
+                        Ok(cx.undefined().as_value(cx))
+                    })
+                },
+            )
+        }),
         ("delete", |mut cx| {
             unpack_this(&mut cx, |cx, data: &(SharedEngine, AudioTrackWrapper)| {
                 let (shared_engine, audio_track) = data;
