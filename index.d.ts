@@ -3,16 +3,22 @@
 
 declare module "adae-node" {
     abstract class ExposedObject {
-        /** The internal data and state of the engine. Do not touch. */
+        /**
+         * The internal data and state of the engine. Do not touch.
+         */
         private data: unknown;
-        /** Prevents the object from being prematurely garbage collected. */
+        /**
+         * Prevents the object from being prematurely garbage collected.
+         */
         private root?: unknown;
     }
 
     class Engine extends ExposedObject {
         #type: "Engine";
 
-        /** Create a dummy engine, for testing purposes. */
+        /**
+         * Create a dummy engine, for testing purposes.
+         */
         static dummy(): Engine;
 
         /**
@@ -97,6 +103,9 @@ declare module "adae-node" {
          */
         reconstructAudioTracks(states: AudioTrackState[]): AudioTrack[];
 
+        /**
+         * Import audio clip from file.
+         */
         importAudioClip(path: string): StoredAudioClip;
 
         /**
@@ -107,12 +116,21 @@ declare module "adae-node" {
     }
 
     abstract class Track extends ExposedObject {
+        /**
+         * Get the panning of the track, where -1 is left, 0 is center and 1 is right.
+         */
         getPanning(): number;
+        /**
+         * Set the panning of the track, where -1 is left, 0 is center and 1 is right.
+         */
         setPanning(value: number): void;
 
+        /**
+         * Get the output volume of the track, where 0 is muted and 1 is full volume.
+         */
         getVolume(): number;
         /**
-         * Sets the output volume of the track.
+         * Set the output volume of the track, where 0 is muted and 1 is full volume.
          */
         setVolume(value: number): void;
 
@@ -134,18 +152,34 @@ declare module "adae-node" {
         snapMeter(): void;
     }
 
+    /**
+     * The master track is always present on the mixer.
+     * It is the final output of the mixer, and cannot be deleted.
+     */
     class MasterTrack extends Track {
         #type: "MasterTrack";
         private constructor();
     }
 
+    /**
+     * An audio track is a track that can contain audio clips on its timeline.
+     */
     class AudioTrack extends Track {
         #type: "AudioTrack";
         private constructor();
 
-        /** Unique identifier of the track. */
+        /**
+         * Unique identifier of the track.
+         * */
         key(): number;
 
+        /**
+         * Add clip to track.
+         *
+         * @param clip      The stored clip, as returned by {@linkcode Engine.importAudioClip()}.
+         * @param start     The start position of the clip.
+         * @param length    The length of the clip. If `null`, the entire clip is used.
+         */
         addClip(
             clip: StoredAudioClip,
             start: Timestamp,
@@ -175,9 +209,14 @@ declare module "adae-node" {
     }
 
     /**
-     * A clip that can be placed on the timeline.
+     * A clip that has been imported, and is ready to be used on the timeline.
+     *
+     * Obtained from {@linkcode Engine.importAudioClip()}.
      */
     abstract class StoredClip extends ExposedObject {
+        /**
+         * Unique identifier of the clip.
+         */
         key(): number;
     }
     class StoredAudioClip extends StoredClip {
@@ -198,14 +237,36 @@ declare module "adae-node" {
         length(): number;
     }
 
+    /**
+     * A clip that has been added to the timeline.
+     */
     abstract class Clip extends ExposedObject {
+        /**
+         * Unique identifier of the clip.
+         */
         key(): number;
 
+        /**
+         * Get the start position of the clip.
+         */
         start(): Timestamp;
+        /**
+         * Get the length of the clip.
+         *
+         * If `null`, the entire stored clip is used.
+         */
         length(): Timestamp | null;
 
+        /**
+         * Get the referenced stored clip.
+         */
         storedClip(): StoredClip;
     }
+    /**
+     * An audio clip that has been added to the timeline.
+     *
+     * Obtained from {@linkcode AudioTrack.addClip()}.
+     */
     class AudioClip extends Clip {
         #type: "AudioClip";
         private constructor();
@@ -213,18 +274,30 @@ declare module "adae-node" {
         storedClip(): StoredAudioClip;
     }
 
+    /**
+     * A timestamp is either a point in time or a duration on the timeline,
+     * which can be represented in different units.
+     */
     class Timestamp extends ExposedObject {
         #type: "Timestamp";
         private constructor();
 
-        /** Return the smallest of the two timestamps */
+        /**
+         * Return the smallest of the two timestamps.
+         */
         static min(a: Timestamp, b: Timestamp): Timestamp;
-        /** Return the largest of the two timestamps */
+        /**
+         * Return the largest of the two timestamps.
+         */
         static max(a: Timestamp, b: Timestamp): Timestamp;
-        /** Check whether the two timestamps are equal to each other */
+        /**
+         * Check whether the two timestamps are equal to each other .
+         */
         static eq(a: Timestamp, b: Timestamp): boolean;
 
-        /** Add `a` to `b` */
+        /**
+         * Add `a` to `b`.
+         */
         static add(a: Timestamp, b: Timestamp): Timestamp;
         /**
          * Subtract `b` from `a`.
@@ -270,7 +343,9 @@ declare module "adae-node" {
             bpm: number,
         ): Timestamp;
 
-        /** 1 beat = 1024 beat units */
+        /**
+         * 1 beat = 1024 beat units
+         */
         getBeatUnits(): number;
         getBeats(): number;
         getSamples(sampleRate: number, bpm: number): number;
@@ -358,6 +433,7 @@ declare module "adae-node" {
             sampleRate: number;
             /**
              * The size of the internal buffers in samples.
+             *
              * If `null`, the default is used.
              */
             bufferSize: number | null;
@@ -372,9 +448,31 @@ declare module "adae-node" {
             #type: "OutputConfigRange";
             private constructor();
 
+            /**
+             * The number of channels to output, i.e. 1 = mono and 2 = stereo.
+             *
+             * This setting has no impact on the number of channels used internally.
+             * This is converted right before the samples are sent to the output device.
+             */
             channels(): number;
+            /**
+             * The format of the output samples.
+             *
+             * This setting has no impact on the format used internally, which is a mix of 32- and 64-bit floating point.
+             * This is converted right before the samples are sent to the output device.
+             */
             sampleFormat(): SampleFormat;
+            /**
+             * The supported range of sample rates in Hz, including both ends.
+             *
+             * This is used both internally and for the output device.
+             */
             sampleRate(): { min: number; max: number };
+            /**
+             * The supported range of buffer sizes.
+             *
+             * If `null`, this is unknown, and the default should be used by setting {@link OutputConfig.bufferSize|bufferSize} to `null`.
+             */
             bufferSize(): { min: number; max: number } | null;
 
             /**
@@ -383,6 +481,9 @@ declare module "adae-node" {
             defaultConfig(): OutputConfig;
         }
 
+        /**
+         * All possible sample formats.
+         */
         enum SampleFormat {
             Int8 = "i8",
             Int16 = "i16",
