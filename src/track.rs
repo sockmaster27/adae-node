@@ -99,7 +99,7 @@ pub mod audio_track {
             let (shared_engine, audio_track) = data;
 
             shared_engine.with_inner(cx, |cx, engine| {
-                let track = match engine.mixer_track_mut(audio_track.track_key()) {
+                let track = match engine.mixer_track_mut(audio_track.mixer_track_key()) {
                     Ok(track) => track,
                     Err(_) => {
                         return cx.throw_error("Audio track has been deleted");
