@@ -193,6 +193,12 @@ declare module "adae-node" {
         deleteClip(clip: AudioClip): void;
 
         /**
+         * Delete multiple clips from the track.
+         * After this is done, calling any method on the clip will throw an {@linkcode Error}.
+         */
+        deleteClips(clips: AudioClip[]): void;
+
+        /**
          * Alias for {@linkcode Engine.deleteAudioTrack()|Engine.deleteAudioTrack(this)}:
          *
          * Delete track, and remove it from the mixer.
