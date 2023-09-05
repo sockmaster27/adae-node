@@ -240,6 +240,23 @@ describe("Engine", () => {
                     track.deleteClip(timelineClip);
                 });
 
+                test("deleteClips()", () => {
+                    const storedClip = importTestClip();
+
+                    const timelineClips = [];
+                    for (let i = 0; i < 43; i++) {
+                        timelineClips.push(
+                            track.addClip(
+                                storedClip,
+                                Timestamp.fromBeats(i),
+                                Timestamp.fromBeats(1),
+                            ),
+                        );
+                    }
+
+                    track.deleteClips(timelineClips);
+                });
+
                 test("delete() deletes track", () => {
                     track.delete();
                     expect(() =>
@@ -260,6 +277,7 @@ describe("Engine", () => {
                         "key",
                         "addClip",
                         "deleteClip",
+                        "deleteClips",
                         "delete",
                     ];
 

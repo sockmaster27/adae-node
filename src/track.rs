@@ -220,7 +220,55 @@ pub mod audio_track {
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
                             .delete_audio_clip(*track_key, *clip_key)
-                            .or_else(|e| cx.throw_error(format!("{}", &e)))?;
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                        Ok(cx.undefined().as_value(cx))
+                    })
+                },
+            )
+        }),
+        ("deleteClips", |mut cx| {
+            let this_track_key = unpack_this(
+                &mut cx,
+                |_cx, (_, audio_track): &(SharedEngine, AudioTrackWrapper)| {
+                    Ok(audio_track.0.timeline_track_key())
+                },
+            )?;
+
+            let clips_js_array = cx.argument::<JsArray>(0)?;
+            let clips_js = clips_js_array.to_vec(&mut cx)?;
+            let clips_keys_res: NeonResult<Vec<_>> = clips_js
+                .into_iter()
+                .map(|clip_js| {
+                    let clip_obj = clip_js.downcast_or_throw::<JsObject, _>(&mut cx)?;
+                    unpack(
+                        &mut cx,
+                        clip_obj,
+                        |cx,
+                         (_, track_key, clip_key): &(
+                            SharedEngine,
+                            adae::TimelineTrackKey,
+                            adae::AudioClipKey,
+                        )| {
+                            if this_track_key != *track_key {
+                                return cx.throw_error(
+                                    "At least one clip does not belong to this track",
+                                );
+                            }
+
+                            Ok(*clip_key)
+                        },
+                    )
+                })
+                .collect();
+            let clips_keys = clips_keys_res?;
+
+            unpack_this(
+                &mut cx,
+                |cx, (shared_engine, audio_track): &(SharedEngine, AudioTrackWrapper)| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        engine
+                            .delete_audio_clips(audio_track.timeline_track_key(), clips_keys)
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
                         Ok(cx.undefined().as_value(cx))
                     })
                 },
