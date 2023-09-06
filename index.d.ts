@@ -295,6 +295,8 @@ declare module "adae-node" {
         private constructor();
 
         storedClip(): StoredAudioClip;
+
+        delete(): AudioClipState;
     }
 
     /**
