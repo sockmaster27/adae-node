@@ -50,7 +50,7 @@ pub mod stored_audio_clip {
         }),
         ("sampleRate", |mut cx| {
             unpack_this_stored_clip(&mut cx, |cx, clip| {
-                Ok(cx.number(clip.sample_rate as f64).as_value(cx))
+                Ok(cx.number(clip.sample_rate() as f64).as_value(cx))
             })
         }),
         ("length", |mut cx| {
