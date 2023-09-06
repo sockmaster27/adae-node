@@ -3,6 +3,7 @@
         "types": ["node", "jest"],
         "module": "CommonJS",
         "outDir": "./build",
-        "target": "ESNext"
+        "target": "ESNext",
+        "esModuleInterop": true
     }
 }
