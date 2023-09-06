@@ -228,9 +228,18 @@ describe("Engine", () => {
                     expect(typeof track.key()).toBe("number");
                 });
 
+                test("getClips()", () => {
+                    expect(track.getClips()).toBeDefined();
+                });
+
                 test("addClip()", () => {
                     const storedClip = importTestClip();
+
+                    expect(track.getClips().length).toBe(0);
+
                     track.addClip(storedClip, Timestamp.zero());
+
+                    expect(track.getClips().length).toBe(1);
                 });
 
                 test("deleteClip()", () => {
@@ -239,7 +248,12 @@ describe("Engine", () => {
                         storedClip,
                         Timestamp.zero(),
                     );
+
+                    expect(track.getClips().length).toBe(1);
+
                     track.deleteClip(timelineClip);
+
+                    expect(track.getClips().length).toBe(0);
                 });
 
                 test("deleteClips()", () => {
@@ -277,6 +291,7 @@ describe("Engine", () => {
                         "snapMeter",
 
                         "key",
+                        "getClips",
                         "addClip",
                         "deleteClip",
                         "deleteClips",

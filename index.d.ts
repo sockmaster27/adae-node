@@ -174,6 +174,11 @@ declare module "adae-node" {
         key(): number;
 
         /**
+         * Get all clips on the track.
+         */
+        getClips(): AudioClip[];
+
+        /**
          * Add clip to track.
          *
          * @param clip      The stored clip, as returned by {@linkcode Engine.importAudioClip()}.

@@ -150,6 +150,29 @@ pub mod audio_track {
                 Ok(cx.number(key as f64).as_value(cx))
             })
         }),
+        ("getClips", |mut cx| {
+            unpack_this(
+                &mut cx,
+                |cx, (shared_engine, audio_track): &(SharedEngine, AudioTrackWrapper)| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        let clips = engine.audio_clips(audio_track.timeline_track_key());
+
+                        let clips_js = JsArray::new(cx, clips.size_hint().0 as u32);
+                        for (i, clip) in clips.enumerate() {
+                            let clip_js = audio_clip::construct(
+                                cx,
+                                audio_track.timeline_track_key(),
+                                clip.key,
+                                shared_engine.clone(),
+                            )?;
+                            clips_js.set(cx, i as u32, clip_js)?;
+                        }
+
+                        Ok(clips_js.as_value(cx))
+                    })
+                },
+            )
+        }),
         ("addClip", |mut cx| {
             let audio_clip_js = cx.argument::<JsObject>(0)?;
             let audio_clip_key = unpack(
