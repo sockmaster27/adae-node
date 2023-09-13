@@ -7,6 +7,7 @@ use crate::encapsulator::Method;
 use crate::shared_engine::SharedEngine;
 use crate::stored_clip::stored_audio_clip;
 use crate::timestamp;
+use std::ops::Deref;
 
 pub mod audio_clip {
     use super::*;
@@ -44,6 +45,45 @@ pub mod audio_clip {
                 })
             },
         )
+    }
+
+    pub fn state_of<'a, C>(cx: &mut C, clip_obj: Handle<'a, JsObject>) -> JsResult<'a, JsObject>
+    where
+        C: Context<'a>,
+    {
+        encapsulator::unpack(
+            cx,
+            clip_obj,
+            |cx,
+             (shared_engine, track_key, clip_key): &(
+                SharedEngine,
+                adae::TimelineTrackKey,
+                adae::AudioClipKey,
+            )| {
+                shared_engine.with_inner(cx, |cx, engine| {
+                    let state = engine
+                        .audio_clip(*track_key, *clip_key)
+                        .or_else(|e| cx.throw_error(format!("{e}")))?
+                        .state();
+
+                    let state_js = encapsulate(cx, AudioClipStateWrapper(state), &[], &[])?;
+                    Ok(state_js)
+                })
+            },
+        )
+    }
+
+    pub fn unapck_state<'a, C>(
+        cx: &mut C,
+        state_obj: Handle<'a, JsObject>,
+    ) -> NeonResult<adae::AudioClipState>
+    where
+        C: Context<'a>,
+    {
+        let state = encapsulator::unpack(cx, state_obj, |_cx, state: &AudioClipStateWrapper| {
+            Ok(state.0.clone())
+        })?;
+        Ok(state)
     }
 
     const METHODS: &[(&str, Method)] = &[
@@ -107,4 +147,14 @@ pub mod audio_clip {
             )
         }),
     ];
+
+    #[derive(Debug)]
+    pub struct AudioClipStateWrapper(pub adae::AudioClipState);
+    impl Deref for AudioClipStateWrapper {
+        type Target = adae::AudioClipState;
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+    impl Finalize for AudioClipStateWrapper {}
 }

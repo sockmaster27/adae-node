@@ -231,6 +231,7 @@ pub mod audio_track {
         }),
         ("deleteClip", |mut cx| {
             let clip_js = cx.argument::<JsObject>(0)?;
+            let state = audio_clip::state_of(&mut cx, clip_js)?;
             unpack(
                 &mut cx,
                 clip_js,
@@ -244,7 +245,8 @@ pub mod audio_track {
                         engine
                             .delete_audio_clip(*track_key, *clip_key)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
-                        Ok(cx.undefined().as_value(cx))
+
+                        Ok(state.as_value(cx))
                     })
                 },
             )
@@ -259,8 +261,8 @@ pub mod audio_track {
 
             let clips_js_array = cx.argument::<JsArray>(0)?;
             let clips_js = clips_js_array.to_vec(&mut cx)?;
-            let clips_keys_res: NeonResult<Vec<_>> = clips_js
-                .into_iter()
+            let clip_keys = clips_js
+                .iter()
                 .map(|clip_js| {
                     let clip_obj = clip_js.downcast_or_throw::<JsObject, _>(&mut cx)?;
                     unpack(
@@ -282,17 +284,81 @@ pub mod audio_track {
                         },
                     )
                 })
-                .collect();
-            let clips_keys = clips_keys_res?;
+                .collect::<NeonResult<Vec<_>>>()?;
+
+            let clip_states_js_array = JsArray::new(&mut cx, clips_js.len() as u32);
+            for (i, clip_js) in clips_js.iter().enumerate() {
+                let clip_obj = clip_js.downcast_or_throw::<JsObject, _>(&mut cx)?;
+                let clip_state_js = audio_clip::state_of(&mut cx, clip_obj)?;
+                clip_states_js_array.set(&mut cx, i as u32, clip_state_js)?;
+            }
 
             unpack_this(
                 &mut cx,
                 |cx, (shared_engine, audio_track): &(SharedEngine, AudioTrackWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
-                            .delete_audio_clips(audio_track.timeline_track_key(), clips_keys)
+                            .delete_audio_clips(audio_track.timeline_track_key(), clip_keys)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
-                        Ok(cx.undefined().as_value(cx))
+                        Ok(clip_states_js_array.as_value(cx))
+                    })
+                },
+            )
+        }),
+        ("reconstructClip", |mut cx| {
+            let state_js = cx.argument::<JsObject>(0)?;
+            let state = audio_clip::unapck_state(&mut cx, state_js)?;
+
+            unpack_this(
+                &mut cx,
+                |cx, (shared_engine, track): &(SharedEngine, AudioTrackWrapper)| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        let track_key = track.timeline_track_key();
+
+                        let clip_key = engine
+                            .reconstruct_audio_clip(track_key, state)
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+
+                        let clip_js =
+                            audio_clip::construct(cx, track_key, clip_key, shared_engine.clone())?;
+                        Ok(clip_js.as_value(cx))
+                    })
+                },
+            )
+        }),
+        ("reconstructClips", |mut cx| {
+            let states_js_array = cx.argument::<JsArray>(0)?;
+            let states_js = states_js_array.to_vec(&mut cx)?;
+            let states = states_js
+                .iter()
+                .map(|state_js| {
+                    let state_obj = state_js.downcast_or_throw(&mut cx)?;
+                    audio_clip::unapck_state(&mut cx, state_obj)
+                })
+                .collect::<NeonResult<Vec<_>>>()?;
+
+            unpack_this(
+                &mut cx,
+                |cx, (shared_engine, track): &(SharedEngine, AudioTrackWrapper)| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        let track_key = track.timeline_track_key();
+
+                        let clip_keys = engine
+                            .reconstruct_audio_clips(track_key, states)
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+
+                        let clips_js = JsArray::new(cx, clip_keys.len() as u32);
+                        for (i, &clip_key) in clip_keys.iter().enumerate() {
+                            let clip_js = audio_clip::construct(
+                                cx,
+                                track_key,
+                                clip_key,
+                                shared_engine.clone(),
+                            )?;
+                            clips_js.set(cx, i as u32, clip_js)?;
+                        }
+
+                        Ok(clips_js.as_value(cx))
                     })
                 },
             )

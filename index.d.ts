@@ -85,7 +85,7 @@ declare module "adae-node" {
          * Delete an array of audio tracks, and remove thme from the mixer.
          * After this is done, calling any method on these tracks will throw an {@linkcode Error}.
          *
-         * Returns an array of data that can be passed to {@linkcode Engine.reconstructAudioTrack()}/{@linkcode reconstructAudioTracks()},
+         * Returns an array of states that can be passed to {@linkcode Engine.reconstructAudioTrack()}/{@linkcode reconstructAudioTracks()},
          * to reconstruct these tracks.
          */
         deleteAudioTracks(audioTracks: AudioTrack[]): AudioTrackState[];
@@ -195,13 +195,25 @@ declare module "adae-node" {
          * Delete clip from track.
          * After this is done, calling any method on the clip will throw an {@linkcode Error}.
          */
-        deleteClip(clip: AudioClip): void;
-
+        deleteClip(clip: AudioClip): AudioClipState;
         /**
          * Delete multiple clips from the track.
          * After this is done, calling any method on the clip will throw an {@linkcode Error}.
          */
-        deleteClips(clips: AudioClip[]): void;
+        deleteClips(clips: AudioClip[]): AudioClipState[];
+
+        /**
+         * Reconstruct a clip that has been deleted.
+         *
+         * The state can be obtained by calling {@linkcode AudioClip.delete()} or {@linkcode AudioTrack.deleteClip()}/{@linkcode deleteClips()}.
+         */
+        reconstructClip(state: AudioClipState): AudioClip;
+        /**
+         * Reconstruct multiple clips that have been deleted.
+         *
+         * The states can be obtained by calling {@linkcode AudioClip.delete()} or {@linkcode AudioTrack.deleteClip()}/{@linkcode deleteClips()}.
+         */
+        reconstructClips(states: AudioClipState[]): AudioClip[];
 
         /**
          * Alias for {@linkcode Engine.deleteAudioTrack()|Engine.deleteAudioTrack(this)}:
@@ -283,7 +295,7 @@ declare module "adae-node" {
          * Delete clip from track.
          * After this is done, calling any method on the clip will throw an {@linkcode Error}.
          */
-        delete(): void;
+        delete(): ClipState;
     }
     /**
      * An audio clip that has been added to the timeline.
@@ -297,6 +309,12 @@ declare module "adae-node" {
         storedClip(): StoredAudioClip;
 
         delete(): AudioClipState;
+    }
+
+    abstract class ClipState extends ExposedObject {}
+    class AudioClipState extends ClipState {
+        #type: "AudioClipState";
+        private constructor();
     }
 
     /**

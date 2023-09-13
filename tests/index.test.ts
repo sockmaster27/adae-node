@@ -273,6 +273,38 @@ describe("Engine", () => {
                     track.deleteClips(timelineClips);
                 });
 
+                test("reconstructClip()", () => {
+                    const storedClip = importTestClip();
+                    const clip1 = track.addClip(storedClip, Timestamp.zero());
+                    const state = track.deleteClip(clip1);
+                    const clip2 = track.reconstructClip(state);
+
+                    expect(clip1.key()).toBe(clip2.key());
+                });
+
+                test("reconstructClips()", () => {
+                    const storedClip = importTestClip();
+                    const timelineClips1 = [];
+                    for (let i = 0; i < 43; i++) {
+                        timelineClips1.push(
+                            track.addClip(
+                                storedClip,
+                                Timestamp.fromBeats(i),
+                                Timestamp.fromBeats(1),
+                            ),
+                        );
+                    }
+                    const states = track.deleteClips(timelineClips1);
+                    const timelineClips2 = track.reconstructClips(states);
+
+                    expect(timelineClips1.length).toBe(timelineClips2.length);
+                    for (let i = 0; i < timelineClips1.length; i++) {
+                        expect(timelineClips1[i].key()).toBe(
+                            timelineClips2[i].key(),
+                        );
+                    }
+                });
+
                 test("delete() deletes track", () => {
                     track.delete();
                     expect(() =>
@@ -295,6 +327,8 @@ describe("Engine", () => {
                         "addClip",
                         "deleteClip",
                         "deleteClips",
+                        "reconstructClip",
+                        "reconstructClips",
                         "delete",
                     ];
 
