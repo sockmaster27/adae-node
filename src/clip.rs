@@ -137,11 +137,14 @@ pub mod audio_clip {
                     adae::TimelineTrackKey,
                     adae::AudioClipKey,
                 )| {
+                    let this = cx.this();
+                    let state = state_of(cx, this)?;
+
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
                             .delete_audio_clip(*track_key, *clip_key)
-                            .or_else(|e| cx.throw_error(format!("{}", &e)))?;
-                        Ok(cx.undefined().as_value(cx))
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                        Ok(state.as_value(cx))
                     })
                 },
             )

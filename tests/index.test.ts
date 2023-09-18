@@ -251,7 +251,7 @@ describe("Engine", () => {
 
                     expect(track.getClips().length).toBe(1);
 
-                    track.deleteClip(timelineClip);
+                    expect(track.deleteClip(timelineClip)).toBeDefined();
 
                     expect(track.getClips().length).toBe(0);
                 });
@@ -270,7 +270,7 @@ describe("Engine", () => {
                         );
                     }
 
-                    track.deleteClips(timelineClips);
+                    expect(track.deleteClips(timelineClips)).toBeDefined();
                 });
 
                 test("reconstructClip()", () => {
@@ -432,7 +432,7 @@ describe("Engine", () => {
         });
 
         test("delete()", () => {
-            clip.delete();
+            expect(clip.delete()).toBeDefined();
             const methods = ["key", "start", "length", "storedClip", "delete"];
 
             for (const method of methods) expect(clip[method]).toThrowError();
