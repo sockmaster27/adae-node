@@ -79,7 +79,12 @@ const STATIC_METHODS: &[(&str, Method)] = &[
         let b_js = cx.argument::<JsObject>(1)?;
         let b = timestamp(&mut cx, b_js)?;
 
-        construct(&mut cx, a + b)
+        let r = match a.checked_add(b) {
+            Some(r) => Ok(r),
+            None => cx.throw_error(format!("Timestamp addition with overflow: {a:?} + {b:?}")),
+        }?;
+
+        construct(&mut cx, r)
     }),
     ("sub", |mut cx| {
         let a_js = cx.argument::<JsObject>(0)?;
@@ -88,7 +93,14 @@ const STATIC_METHODS: &[(&str, Method)] = &[
         let b_js = cx.argument::<JsObject>(1)?;
         let b = timestamp(&mut cx, b_js)?;
 
-        construct(&mut cx, a - b)
+        let r = match a.checked_sub(b) {
+            Some(r) => Ok(r),
+            None => cx.throw_error(format!(
+                "Timestamp subtraction with overflow: {a:?} - {b:?}"
+            )),
+        }?;
+
+        construct(&mut cx, r)
     }),
     ("mul", |mut cx| {
         let ts_js = cx.argument::<JsObject>(0)?;
