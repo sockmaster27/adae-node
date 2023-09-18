@@ -1,4 +1,4 @@
-use std::{panic, sync::Mutex};
+use std::{backtrace::Backtrace, panic, sync::Mutex};
 
 use neon::{prelude::*, types::Deferred};
 
@@ -55,7 +55,14 @@ impl PanicHandler {
         }
 
         let loc = info.location().unwrap();
-        let error_msg = format!("{}\n{}:{}:{}", msg, loc.file(), loc.line(), loc.column());
+        let error_msg = format!(
+            "{}\n{}:{}:{}\n{}",
+            msg,
+            loc.file(),
+            loc.line(),
+            loc.column(),
+            Backtrace::force_capture()
+        );
 
         self.settle_with(|deferred, mut cx| {
             let error = cx.error(error_msg)?;
