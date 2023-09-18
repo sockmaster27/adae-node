@@ -306,8 +306,18 @@ declare module "adae-node" {
         #type: "AudioClip";
         private constructor();
 
+        /**
+         * Get the clip in the store that this clip references.
+         */
         storedClip(): StoredAudioClip;
 
+        /**
+         * Delte this clip from the track.
+         *
+         * After this is done, calling any method on the clip will throw an {@linkcode Error}.
+         *
+         * This is an alias for {@linkcode AudioTrack.deleteClip()}.
+         */
         delete(): AudioClipState;
     }
 
