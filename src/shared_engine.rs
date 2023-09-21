@@ -19,7 +19,7 @@ impl SharedEngine {
     }
 
     pub fn new(
-        config: &adae::config::Config,
+        config: adae::config::Config,
     ) -> Result<(Self, Vec<adae::error::ImportError>), adae::error::InvalidConfigError> {
         let (engine, import_errors) = adae::Engine::new(config, &adae::EngineState::default())?;
         Ok((Self(Arc::new(Mutex::new(Some(engine)))), import_errors))

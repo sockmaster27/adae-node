@@ -58,8 +58,8 @@ fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
         Some(config_js) => {
             let config_obj: Handle<JsObject> = config_js.downcast_or_throw(&mut cx)?;
             config::config_class::unpack(&mut cx, config_obj, |cx, config| {
-                let (engine, import_errors) =
-                    SharedEngine::new(config).or_else(|e| cx.throw_error(format!("{e}")))?;
+                let (engine, import_errors) = SharedEngine::new(config.clone())
+                    .or_else(|e| cx.throw_error(format!("{e}")))?;
                 debug_assert!(
                     import_errors.is_empty(),
                     "Import errors: {:?}",
@@ -82,13 +82,22 @@ const STATIC_METHODS: &[(&str, Method)] = &[("dummy", |mut cx| {
     Ok(object.as_value(&mut cx))
 })];
 const METHODS: &[(&str, Method)] = &[
+    ("getConfig", |mut cx| {
+        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.with_inner(cx, |cx, engine| {
+                let config = engine.get_config();
+                let config_js = config::config_class::construct(cx, config.clone())?;
+                Ok(config_js.as_value(cx))
+            })
+        })
+    }),
     ("setConfig", |mut cx| {
         let config_js = cx.argument(0)?;
         config::config_class::unpack(&mut cx, config_js, |cx, config| {
             unpack_this(cx, |cx, shared_engine: &SharedEngine| {
                 shared_engine.with_inner(cx, |cx, engine| {
                     engine
-                        .set_config(config)
+                        .set_config(config.clone())
                         .or_else(|e| cx.throw_error(format!("{e}")))?;
                     Ok(cx.undefined().as_value(cx))
                 })

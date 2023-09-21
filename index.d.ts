@@ -28,7 +28,13 @@ declare module "adae-node" {
          */
         constructor(config?: config.Config);
 
-        /** Restart the engine with the given config. */
+        /**
+         * Get the config currently in use by the engine.
+         */
+        getConfig(): config.Config;
+        /**
+         * Restart the engine with the given config.
+         */
         setConfig(config: config.Config): void;
 
         /**

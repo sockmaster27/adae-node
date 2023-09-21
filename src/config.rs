@@ -49,11 +49,11 @@ pub mod config_class {
         Ok(constructor)
     }
 
-    pub fn construct<'a, C>(cx: &mut C, config: adae::config::Config) -> JsResult<'a, JsValue>
+    pub fn construct<'a, C>(cx: &mut C, config: adae::config::Config) -> JsResult<'a, JsObject>
     where
         C: Context<'a>,
     {
-        Ok(encapsulate(cx, ConfigWrapper(config), &[], &[])?.as_value(cx))
+        encapsulate(cx, ConfigWrapper(config), &[], &[])
     }
 
     pub fn unpack<'a, C, F, R>(cx: &mut C, obj: Handle<'a, JsObject>, callback: F) -> NeonResult<R>
@@ -67,7 +67,7 @@ pub mod config_class {
     }
 
     const STATIC_METHODS: &[(&str, Method)] = &[("default", |mut cx| {
-        construct(&mut cx, adae::config::Config::default())
+        Ok(construct(&mut cx, adae::config::Config::default())?.as_value(&mut cx))
     })];
 
     #[derive(Debug)]
