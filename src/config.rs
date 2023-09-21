@@ -53,7 +53,7 @@ pub mod config_class {
     where
         C: Context<'a>,
     {
-        encapsulate(cx, ConfigWrapper(config), &[], &[])
+        encapsulate(cx, ConfigWrapper(config), &[], METHODS)
     }
 
     pub fn unpack<'a, C, F, R>(cx: &mut C, obj: Handle<'a, JsObject>, callback: F) -> NeonResult<R>
@@ -66,9 +66,29 @@ pub mod config_class {
         })
     }
 
+    pub fn unpack_this<'a, F, R>(cx: &mut MethodContext<'a, JsObject>, callback: F) -> NeonResult<R>
+    where
+        F: FnOnce(&mut MethodContext<'a, JsObject>, &adae::config::Config) -> Result<R, Throw>,
+    {
+        encapsulator::unpack_this(cx, |cx, config: &ConfigWrapper| callback(cx, &config.0))
+    }
+
     const STATIC_METHODS: &[(&str, Method)] = &[("default", |mut cx| {
         Ok(construct(&mut cx, adae::config::Config::default())?.as_value(&mut cx))
     })];
+
+    const METHODS: &[(&str, Method)] = &[
+        ("getOutputDevice", |mut cx| {
+            unpack_this(&mut cx, |cx, config| {
+                Ok(output_device::construct(cx, config.output_device.clone())?.as_value(cx))
+            })
+        }),
+        ("getOutputConfig", |mut cx| {
+            unpack_this(&mut cx, |cx, config| {
+                Ok(output_config::construct(cx, config.output_config.clone())?.as_value(cx))
+            })
+        }),
+    ];
 
     #[derive(Debug)]
     struct ConfigWrapper(adae::config::Config);

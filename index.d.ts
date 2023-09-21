@@ -461,6 +461,9 @@ declare module "adae-node" {
             static default(): Config;
 
             constructor(outputDevice: OutputDevice, outputConfig: OutputConfig);
+
+            getOutputDevice(): OutputDevice;
+            getOutputConfig(): OutputConfig;
         }
 
         /**
