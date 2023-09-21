@@ -1,81 +1,91 @@
-use std::{backtrace::Backtrace, panic, sync::Mutex};
+use std::{
+    backtrace::Backtrace,
+    panic,
+    sync::{Mutex, OnceLock},
+};
 
 use neon::{prelude::*, types::Deferred};
 
+static CHANNEL: OnceLock<Channel> = OnceLock::new();
+static DEFERREDS: OnceLock<Mutex<Vec<Deferred>>> = OnceLock::new();
+
 pub fn listen_for_crash(mut cx: FunctionContext) -> JsResult<JsPromise> {
-    let channel = cx.channel();
+    CHANNEL.get_or_init(|| cx.channel());
+
     let (deferred, promise) = cx.promise();
 
-    let h = PanicHandler {
-        channel,
-        deferred: Mutex::new(Some(deferred)),
-    };
+    DEFERREDS
+        .get_or_init(|| Mutex::new(Vec::new()))
+        .lock()
+        .unwrap()
+        .push(deferred);
 
     let old = panic::take_hook();
     panic::set_hook(Box::new(move |info| {
-        h.call(info);
+        panic_hook(info);
         old(info);
     }));
 
     Ok(promise)
 }
 
-pub fn stop_listening_for_crash(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    drop(panic::take_hook());
-    Ok(cx.undefined())
+pub fn stop_listening_for_crash(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let (deferred, promise) = cx.promise();
+
+    DEFERREDS
+        .get_or_init(|| Mutex::new(Vec::new()))
+        .lock()
+        .unwrap()
+        .push(deferred);
+
+    settle_all_with(|deferred, cx| {
+        let undefined = cx.undefined();
+        deferred.resolve(cx, undefined);
+        Ok(())
+    });
+
+    Ok(promise)
 }
 
-struct PanicHandler {
-    channel: Channel,
-    deferred: Mutex<Option<Deferred>>,
+fn panic_hook(info: &panic::PanicInfo) {
+    let msg = if let Some(m) = info.payload().downcast_ref::<&str>() {
+        m.to_string()
+    } else if let Some(m) = info.payload().downcast_ref::<String>() {
+        m.clone()
+    } else {
+        "Engine crashed with no message".to_string()
+    };
+
+    let loc = info.location().unwrap();
+    let error_msg = format!(
+        "{}\n{}:{}:{}\n{}",
+        msg,
+        loc.file(),
+        loc.line(),
+        loc.column(),
+        Backtrace::force_capture()
+    );
+
+    settle_all_with(move |deferred, cx| {
+        let error = cx.error(&error_msg)?;
+        deferred.reject(cx, error);
+        Ok(())
+    })
 }
-impl PanicHandler {
-    fn settle_with<F>(&self, f: F)
-    where
-        F: FnOnce(Deferred, TaskContext) -> NeonResult<()> + Send + 'static,
-    {
-        let mutex_res = self.deferred.lock();
-        if let Ok(mut def_opt) = mutex_res {
-            if let Some(deferred) = def_opt.take() {
-                self.channel
-                    .try_send(move |cx| f(deferred, cx))
-                    .expect("Failed to panic");
+
+fn settle_all_with<F>(mut f: F)
+where
+    F: FnMut(Deferred, &mut TaskContext) -> NeonResult<()> + Send + 'static,
+{
+    let channel_opt = CHANNEL.get();
+    if let Some(channel) = channel_opt {
+        channel.send(move |mut cx| {
+            let deferreds_opt = DEFERREDS.get();
+            if let Some(deferreds_mutex) = deferreds_opt {
+                let mut deferreds = deferreds_mutex.lock().unwrap();
+                deferreds.drain(..).try_for_each(|d| f(d, &mut cx))?;
             }
-        }
-    }
 
-    fn call(&self, info: &panic::PanicInfo) {
-        let msg;
-        if let Some(m) = info.payload().downcast_ref::<&str>() {
-            msg = m.to_string();
-        } else if let Some(m) = info.payload().downcast_ref::<String>() {
-            msg = m.clone();
-        } else {
-            msg = "Engine crashed with no message".to_string();
-        }
-
-        let loc = info.location().unwrap();
-        let error_msg = format!(
-            "{}\n{}:{}:{}\n{}",
-            msg,
-            loc.file(),
-            loc.line(),
-            loc.column(),
-            Backtrace::force_capture()
-        );
-
-        self.settle_with(|deferred, mut cx| {
-            let error = cx.error(error_msg)?;
-            deferred.reject(&mut cx, error);
-            Ok(())
-        })
-    }
-}
-impl Drop for PanicHandler {
-    fn drop(&mut self) {
-        self.settle_with(|deferred, mut cx| {
-            let undefined = cx.undefined();
-            deferred.resolve(&mut cx, undefined);
             Ok(())
         });
     }

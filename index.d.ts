@@ -446,7 +446,7 @@ declare module "adae-node" {
      *
      * This should be called when the engine is closed, to avoid hanging the process.
      */
-    function stopListeningForCrash(): void;
+    function stopListeningForCrash(): Promise<void>;
 
     namespace config {
         /**
