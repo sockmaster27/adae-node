@@ -6,11 +6,11 @@ use std::{
 
 use neon::{prelude::*, types::Deferred};
 
-static CHANNEL: OnceLock<Channel> = OnceLock::new();
+static CHANNEL: OnceLock<Mutex<Option<Channel>>> = OnceLock::new();
 static DEFERREDS: OnceLock<Mutex<Vec<Deferred>>> = OnceLock::new();
 
 pub fn listen_for_crash(mut cx: FunctionContext) -> JsResult<JsPromise> {
-    CHANNEL.get_or_init(|| cx.channel());
+    CHANNEL.get_or_init(|| Mutex::new(Some(cx.channel())));
 
     let (deferred, promise) = cx.promise();
 
@@ -29,22 +29,21 @@ pub fn listen_for_crash(mut cx: FunctionContext) -> JsResult<JsPromise> {
     Ok(promise)
 }
 
-pub fn stop_listening_for_crash(mut cx: FunctionContext) -> JsResult<JsPromise> {
-    let (deferred, promise) = cx.promise();
+pub fn stop_listening_for_crash(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    // Drop the channel
+    CHANNEL.get().map(|m| m.lock().unwrap().take());
 
-    DEFERREDS
-        .get_or_init(|| Mutex::new(Vec::new()))
-        .lock()
-        .unwrap()
-        .push(deferred);
+    let deferreds_opt = DEFERREDS.get();
 
-    settle_all_with(|deferred, cx| {
-        let undefined = cx.undefined();
-        deferred.resolve(cx, undefined);
-        Ok(())
-    });
+    if let Some(deferreds_mutex) = deferreds_opt {
+        let mut deferreds = deferreds_mutex.lock().unwrap();
+        for deferred in deferreds.drain(..) {
+            let undefined = cx.undefined();
+            deferred.resolve(&mut cx, undefined);
+        }
+    }
 
-    Ok(promise)
+    Ok(cx.undefined())
 }
 
 fn panic_hook(info: &panic::PanicInfo) {
@@ -66,27 +65,24 @@ fn panic_hook(info: &panic::PanicInfo) {
         Backtrace::force_capture()
     );
 
-    settle_all_with(move |deferred, cx| {
-        let error = cx.error(&error_msg)?;
-        deferred.reject(cx, error);
-        Ok(())
-    })
-}
+    // 😔
+    let channel_mutex_opt = CHANNEL.get();
+    if let Some(channel_mutex) = channel_mutex_opt {
+        let channel_opt = channel_mutex.lock().unwrap();
+        if let Some(ref channel) = *channel_opt {
+            channel.send(move |mut cx| {
+                let deferreds_opt = DEFERREDS.get();
+                if let Some(deferreds_mutex) = deferreds_opt {
+                    let mut deferreds = deferreds_mutex.lock().unwrap();
 
-fn settle_all_with<F>(mut f: F)
-where
-    F: FnMut(Deferred, &mut TaskContext) -> NeonResult<()> + Send + 'static,
-{
-    let channel_opt = CHANNEL.get();
-    if let Some(channel) = channel_opt {
-        channel.send(move |mut cx| {
-            let deferreds_opt = DEFERREDS.get();
-            if let Some(deferreds_mutex) = deferreds_opt {
-                let mut deferreds = deferreds_mutex.lock().unwrap();
-                deferreds.drain(..).try_for_each(|d| f(d, &mut cx))?;
-            }
+                    for deferred in deferreds.drain(..) {
+                        let error = cx.error(&error_msg)?;
+                        deferred.reject(&mut cx, error);
+                    }
+                }
 
-            Ok(())
-        });
+                Ok(())
+            });
+        }
     }
 }

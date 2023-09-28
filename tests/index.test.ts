@@ -24,16 +24,21 @@ describe("Engine", () => {
         });
     });
 
-    let engine: any;
-    beforeEach(() => {
-        engine = Engine.dummy();
+    beforeAll(() => {
         listenForCrash().catch((e: Error) => {
             throw e;
         });
     });
+    afterAll(async () => {
+        stopListeningForCrash();
+    });
+
+    let engine: any;
+    beforeEach(() => {
+        engine = Engine.dummy();
+    });
     afterEach(() => {
         engine.close();
-        stopListeningForCrash();
     });
 
     function importTestClip() {
