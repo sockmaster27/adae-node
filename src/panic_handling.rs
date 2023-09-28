@@ -1,5 +1,6 @@
 use std::{
     backtrace::Backtrace,
+    cell::Cell,
     panic,
     sync::{Mutex, OnceLock},
 };
@@ -8,6 +9,9 @@ use neon::{prelude::*, types::Deferred};
 
 static CHANNEL: OnceLock<Mutex<Option<Channel>>> = OnceLock::new();
 static DEFERREDS: OnceLock<Mutex<Vec<Deferred>>> = OnceLock::new();
+thread_local! {
+    static ENABLED: Cell<bool> = Cell::new(true);
+}
 
 pub fn listen_for_crash(mut cx: FunctionContext) -> JsResult<JsPromise> {
     CHANNEL.get_or_init(|| Mutex::new(Some(cx.channel())));
@@ -25,6 +29,9 @@ pub fn listen_for_crash(mut cx: FunctionContext) -> JsResult<JsPromise> {
         panic_hook(info);
         old(info);
     }));
+
+    // Deactive for the main thread, since Neon's panic handling is more precise here.
+    ENABLED.with(|e| e.set(false));
 
     Ok(promise)
 }
@@ -47,6 +54,11 @@ pub fn stop_listening_for_crash(mut cx: FunctionContext) -> JsResult<JsUndefined
 }
 
 fn panic_hook(info: &panic::PanicInfo) {
+    let enabled = ENABLED.with(|e| e.get());
+    if !enabled {
+        return;
+    }
+
     let msg = if let Some(m) = info.payload().downcast_ref::<&str>() {
         m.to_string()
     } else if let Some(m) = info.payload().downcast_ref::<String>() {
