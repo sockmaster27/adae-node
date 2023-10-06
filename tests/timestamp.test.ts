@@ -1,5 +1,5 @@
 // @ts-ignore
-import Adae from "../../index.node";
+import Adae from "../index.node";
 const { Timestamp } = Adae;
 
 test("min()", () => {

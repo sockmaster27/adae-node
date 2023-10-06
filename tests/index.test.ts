@@ -1,7 +1,7 @@
 import path from "path";
 
 // @ts-ignore
-import Adae from "../../index.node"; // Relative to the destination
+import Adae from "../index.node"; // Relative to the destination
 const {
     Timestamp,
     Engine,
@@ -43,13 +43,7 @@ describe("Engine", () => {
 
     function importTestClip() {
         return engine.importAudioClip(
-            path.join(
-                __dirname,
-                "..",
-                "..",
-                "test_files",
-                "48000 32-float.wav",
-            ),
+            path.join(__dirname, "..", "test_files", "48000 32-float.wav"),
         );
     }
 
