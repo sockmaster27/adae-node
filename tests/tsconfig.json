@@ -1,8 +1,6 @@
 {
     "compilerOptions": {
         "types": ["node", "jest"],
-        "module": "CommonJS",
-        "outDir": "./build",
         "target": "ESNext",
         "esModuleInterop": true
     }
