@@ -155,7 +155,9 @@ pub mod audio_track {
                 &mut cx,
                 |cx, (shared_engine, audio_track): &(SharedEngine, AudioTrackWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
-                        let clips = engine.audio_clips(audio_track.timeline_track_key());
+                        let clips = engine
+                            .audio_clips(audio_track.timeline_track_key())
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                         let clips_js = JsArray::new(cx, clips.size_hint().0 as u32);
                         for (i, clip) in clips.enumerate() {
