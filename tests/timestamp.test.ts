@@ -1,6 +1,5 @@
 // @ts-ignore
-import Adae from "../index.node";
-const { Timestamp } = Adae;
+import { Timestamp } from "../index.node";
 
 test("min()", () => {
     const timestamp1 = Timestamp.fromBeatUnits(42);

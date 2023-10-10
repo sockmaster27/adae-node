@@ -1,15 +1,15 @@
 import path from "path";
 
-// @ts-ignore
-import Adae from "../index.node"; // Relative to the destination
-const {
+import {
     Timestamp,
     Engine,
     meterScale,
     inverseMeterScale,
     listenForCrash,
     stopListeningForCrash,
-} = Adae;
+
+    // @ts-ignore: index.node does exist
+} from "../index.node";
 
 describe("Engine", () => {
     describe("Constructors", () => {
