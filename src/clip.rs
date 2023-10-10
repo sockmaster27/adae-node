@@ -116,7 +116,7 @@ pub mod audio_clip {
                     shared_engine.with_inner(cx, |cx, engine| {
                         let clip = engine
                             .audio_clip(*track_key, *clip_key)
-                            .expect("AudioTrackWrapper should have a clip");
+                            .expect("AudioClip references invalid clip");
 
                         Ok(stored_audio_clip::construct(
                             cx,
