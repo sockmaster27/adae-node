@@ -40,7 +40,7 @@ pub mod audio_clip {
                 shared_engine.with_inner(cx, |cx, engine| {
                     let clip = engine
                         .audio_clip(*track_key, *clip_key)
-                        .expect("AudioClip references invalid clip");
+                        .or_else(|e| cx.throw_error(format!("{e}")))?;
                     callback(cx, clip)
                 })
             },
@@ -116,7 +116,7 @@ pub mod audio_clip {
                     shared_engine.with_inner(cx, |cx, engine| {
                         let clip = engine
                             .audio_clip(*track_key, *clip_key)
-                            .expect("AudioClip references invalid clip");
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                         Ok(stored_audio_clip::construct(
                             cx,
