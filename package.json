@@ -25,7 +25,7 @@
     "author": "Holger Dal Mogensen",
     "license": "MIT",
     "devDependencies": {
-        "@types/jest": "^29.5.5",
+        "@types/jest": "^29.5.6",
         "@types/node": "^18.18.5",
         "cargo-cp-artifact": "^0.1.8",
         "concurrently": "^8.2.1",
