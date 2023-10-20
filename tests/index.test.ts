@@ -92,6 +92,11 @@ describe("Engine", () => {
                     }
                 }
 
+                if (track1.getClips().length !== track2.getClips().length) {
+                    equal = false;
+                    reasons.push("Number of clips mismatched");
+                }
+
                 return [
                     equal,
                     reasons.length === 0 ? null : reasons.join("\n"),
@@ -181,6 +186,20 @@ describe("Engine", () => {
                 const before = engine.getAudioTracks();
                 const states = engine.deleteAudioTracks(newAudioTracks);
                 engine.reconstructAudioTracks(states);
+
+                expect(engine.getAudioTracks().length).toBe(before.length);
+
+                for (const track of engine.getAudioTracks())
+                    expect(containsEqualAudioTrack(before, track)).toBe(true);
+            });
+
+            test("Reconstruct track with clip", () => {
+                const storedClip = importTestClip();
+                const newAudioTrack = engine.addAudioTrack();
+                newAudioTrack.addClip(storedClip, Timestamp.zero());
+                const before = engine.getAudioTracks();
+                const state = engine.deleteAudioTrack(newAudioTrack);
+                engine.reconstructAudioTrack(state);
 
                 expect(engine.getAudioTracks().length).toBe(before.length);
 
