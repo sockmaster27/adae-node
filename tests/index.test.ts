@@ -445,6 +445,10 @@ describe("Engine", () => {
             expect(clip.length()).toBeNull();
         });
 
+        test("cropEnd()", () => {
+            expect(clip.cropEnd(Timestamp.fromBeats(1))).toBeUndefined();
+        });
+
         test("storedClip()", () => {
             expect(clip.storedClip()).toBeDefined();
         });

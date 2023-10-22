@@ -293,6 +293,11 @@ declare module "adae-node" {
         length(): Timestamp | null;
 
         /**
+         * Set the length of the clip, keeping the start position fixed.
+         */
+        cropEnd(newLength: Timestamp): void;
+
+        /**
          * Get the referenced stored clip.
          */
         storedClip(): StoredClip;
