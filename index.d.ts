@@ -22,7 +22,7 @@ declare module "adae-node" {
         static dummy(): Engine;
 
         /**
-         * Create and initialize new engine with the given configuration.
+         * Create and initialize a new engine with the given configuration.
          *
          * If no configuration is given, the default configuration is used.
          */
@@ -449,7 +449,7 @@ declare module "adae-node" {
     /**
      * Makes {@linkcode listenForCrash()} resolve.
      *
-     * This should be called when the engine is closed, to avoid hanging the process.
+     * This should be called when the program exits, to avoid hanging the process.
      */
     function stopListeningForCrash(): void;
 
