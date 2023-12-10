@@ -445,8 +445,15 @@ describe("Engine", () => {
             expect(clip.length()).toBeNull();
         });
 
+        test("cropStart()", () => {
+            clip.cropStart(Timestamp.fromBeats(1));
+            expect(clip.start().getBeats()).toBe(2);
+            expect(clip.length().getBeats()).toBe(1);
+        });
         test("cropEnd()", () => {
-            expect(clip.cropEnd(Timestamp.fromBeats(1))).toBeUndefined();
+            clip.cropEnd(Timestamp.fromBeats(1));
+            expect(clip.start().getBeats()).toBe(1);
+            expect(clip.length().getBeats()).toBe(1);
         });
 
         test("storedClip()", () => {
