@@ -365,7 +365,7 @@ declare module "adae-node" {
         static add(a: Timestamp, b: Timestamp): Timestamp;
         /**
          * Subtract `b` from `a`.
-         * Throws {@linkcode Error} if result is less than zero.
+         * Throws {@linkcode RangeError} if result is less than zero.
          */
         static sub(a: Timestamp, b: Timestamp): Timestamp;
         /**

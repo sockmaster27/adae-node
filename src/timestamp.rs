@@ -81,7 +81,9 @@ const STATIC_METHODS: &[(&str, Method)] = &[
 
         let r = match a.checked_add(b) {
             Some(r) => Ok(r),
-            None => cx.throw_error(format!("Timestamp addition with overflow: {a:?} + {b:?}")),
+            None => {
+                cx.throw_range_error(format!("Timestamp addition with overflow: {a:?} + {b:?}"))
+            }
         }?;
 
         construct(&mut cx, r)
@@ -95,7 +97,7 @@ const STATIC_METHODS: &[(&str, Method)] = &[
 
         let r = match a.checked_sub(b) {
             Some(r) => Ok(r),
-            None => cx.throw_error(format!(
+            None => cx.throw_range_error(format!(
                 "Timestamp subtraction with overflow: {a:?} - {b:?}"
             )),
         }?;
