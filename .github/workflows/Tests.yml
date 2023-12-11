@@ -18,6 +18,8 @@ jobs:
             - uses: actions/checkout@v4
             - name: Setup Credentials
               run: git config --global url."https://${{ secrets.GIT_CREDENTIALS }}@github.com".insteadOf https://github.com
+            - name: Update apt index
+              run: apt update
             - name: Install ALSA
               run: sudo apt-get install -y libasound2-dev
             - name: Install Dependencies
