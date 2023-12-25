@@ -28,6 +28,6 @@ jobs:
                   cargo update
                   cargo clippy --all-targets --all-features -- -D warnings
             - name: Build
-              run: npm run build-debug --allow-root
+              run: npm run build-debug
             - name: Run Tests
               run: npm test
