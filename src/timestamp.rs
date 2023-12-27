@@ -164,10 +164,14 @@ const STATIC_METHODS: &[(&str, Method)] = &[
         if samples_f64 < 0.0 {
             return cx.throw_range_error(err_msg("sample", "greater than zero", samples_f64));
         }
-        if (u64::MAX as f64) < samples_f64 {
-            return cx.throw_range_error(err_msg("sample", "smaller than 2^64", samples_f64));
+        if (usize::MAX as f64) < samples_f64 {
+            return cx.throw_range_error(err_msg(
+                "sample",
+                &format!("smaller than 2^{}", usize::BITS),
+                samples_f64,
+            ));
         }
-        let samples = samples_f64 as u64;
+        let samples = samples_f64 as usize;
 
         let sample_rate_js: Handle<JsNumber> = cx.argument(1)?;
         let sample_rate_f64 = sample_rate_js.value(&mut cx);
