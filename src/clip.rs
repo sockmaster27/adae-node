@@ -104,6 +104,27 @@ pub mod audio_clip {
                 None => Ok(cx.null().upcast()),
             })
         }),
+        ("move", |mut cx| {
+            let new_start_js = cx.argument::<JsObject>(0)?;
+            let new_start = timestamp(&mut cx, new_start_js)?;
+
+            encapsulator::unpack_this(
+                &mut cx,
+                |cx,
+                 (shared_engine, track_key, clip_key): &(
+                    SharedEngine,
+                    adae::TimelineTrackKey,
+                    adae::AudioClipKey,
+                )| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        engine
+                            .audio_clip_move(*track_key, *clip_key, new_start)
+                            .or_else(|e| cx.throw_error(format!("Failed to move clip: {e}")))?;
+                        Ok(cx.undefined().as_value(cx))
+                    })
+                },
+            )
+        }),
         ("cropStart", |mut cx| {
             let new_length_js = cx.argument::<JsObject>(0)?;
             let new_length = timestamp(&mut cx, new_length_js)?;

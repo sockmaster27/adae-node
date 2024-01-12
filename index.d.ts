@@ -293,9 +293,15 @@ declare module "adae-node" {
         length(): Timestamp | null;
 
         /**
+         * Set the start position of the clip.
+         */
+        move(newStart: Timestamp): void;
+
+        /**
          * Set the length of the clip, keeping the end position fixed.
          */
         cropStart(newLength: Timestamp): void;
+
         /**
          * Set the length of the clip, keeping the start position fixed.
          */
