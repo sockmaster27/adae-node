@@ -31,7 +31,7 @@ test("sub()", () => {
     const timestamp1 = Timestamp.fromBeatUnits(43);
     const timestamp2 = Timestamp.fromBeatUnits(42);
     expect(Timestamp.sub(timestamp1, timestamp2).getBeatUnits()).toBe(1);
-    expect(() => Timestamp.sub(timestamp2, timestamp1)).toThrowError();
+    expect(() => Timestamp.sub(timestamp2, timestamp1)).toThrow();
 });
 test("mul()", () => {
     const timestamp = Timestamp.fromBeatUnits(42);

@@ -122,9 +122,7 @@ describe("Engine", () => {
             test("Get track from key fails when track is deleted", () => {
                 const track = engine.addAudioTrack();
                 engine.deleteAudioTrack(track);
-                expect(() =>
-                    engine.getAudioTrack(track.getKey()),
-                ).toThrowError();
+                expect(() => engine.getAudioTrack(track.getKey())).toThrow();
             });
 
             test("Add single track", () => {
@@ -222,8 +220,7 @@ describe("Engine", () => {
                     "close",
                 ];
 
-                for (const method of methods)
-                    expect(engine[method]).toThrowError();
+                for (const method of methods) expect(engine[method]).toThrow();
 
                 // So cleanup can run
                 engine = Engine.getDummy();
@@ -329,7 +326,7 @@ describe("Engine", () => {
                     track.delete();
                     expect(() =>
                         engine.getAudioTrack(track.getKey()),
-                    ).toThrowError();
+                    ).toThrow();
                 });
 
                 test("All methods throw when track is deleted", () => {
@@ -353,7 +350,7 @@ describe("Engine", () => {
                     ];
 
                     for (const method of methods)
-                        expect(track[method]).toThrowError();
+                        expect(track[method]).toThrow();
                 });
             });
 
@@ -398,7 +395,7 @@ describe("Engine", () => {
             expect(importTestClip()).toBeDefined();
         });
         test("importAudioClip() throws when file doesn't exist", () => {
-            expect(() => engine.importAudioClip("nonexistent")).toThrowError();
+            expect(() => engine.importAudioClip("nonexistent")).toThrow();
         });
 
         test("getKey()", () => {
@@ -478,7 +475,7 @@ describe("Engine", () => {
                 "delete",
             ];
 
-            for (const method of methods) expect(clip[method]).toThrowError();
+            for (const method of methods) expect(clip[method]).toThrow();
         });
     });
 });
