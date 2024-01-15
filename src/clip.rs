@@ -99,10 +99,26 @@ pub mod audio_clip {
             unpack_this_clip(&mut cx, |cx, clip| timestamp::construct(cx, clip.start))
         }),
         ("getLength", |mut cx| {
-            unpack_this_clip(&mut cx, |cx, clip| match clip.length {
-                Some(length) => timestamp::construct(cx, length),
-                None => Ok(cx.null().upcast()),
-            })
+            encapsulator::unpack_this(
+                &mut cx,
+                |cx,
+                 (shared_engine, track_key, clip_key): &(
+                    SharedEngine,
+                    adae::TimelineTrackKey,
+                    adae::AudioClipKey,
+                )| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        let config = &engine.config().output_config;
+                        let sample_rate = config.sample_rate;
+                        let bpm_cents = engine.bpm_cents();
+
+                        let clip = engine
+                            .audio_clip(*track_key, *clip_key)
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                        timestamp::construct(cx, clip.current_length(sample_rate, bpm_cents))
+                    })
+                },
+            )
         }),
         ("move", |mut cx| {
             let new_start_js = cx.argument::<JsObject>(0)?;

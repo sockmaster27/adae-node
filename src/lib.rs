@@ -85,7 +85,7 @@ const METHODS: &[(&str, Method)] = &[
     ("getConfig", |mut cx| {
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
-                let config = engine.get_config();
+                let config = engine.config();
                 let config_js = config::config_class::construct(cx, config.clone())?;
                 Ok(config_js.as_value(cx))
             })

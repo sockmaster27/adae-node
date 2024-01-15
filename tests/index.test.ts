@@ -441,7 +441,7 @@ describe("Engine", () => {
         test("getLength() null", () => {
             const track = engine.addAudioTrack();
             clip = track.addClip(importTestClip(), Timestamp.fromBeats(1));
-            expect(clip.getLength()).toBeNull();
+            expect(clip.getLength().getBeats()).toBe(55);
         });
 
         test("move()", () => {

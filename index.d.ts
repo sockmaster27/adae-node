@@ -286,11 +286,9 @@ declare module "adae-node" {
          */
         getStart(): Timestamp;
         /**
-         * Get the length of the clip.
-         *
-         * If `null`, the entire stored clip is used.
+         * Get the current length of the clip.
          */
-        getLength(): Timestamp | null;
+        getLength(): Timestamp;
 
         /**
          * Set the start position of the clip.
