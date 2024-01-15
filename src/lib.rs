@@ -75,7 +75,7 @@ fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
     Ok(object)
 }
 
-const STATIC_METHODS: &[(&str, Method)] = &[("dummy", |mut cx| {
+const STATIC_METHODS: &[(&str, Method)] = &[("getDummy", |mut cx| {
     let shared_engine = SharedEngine::dummy();
     let object = encapsulate(&mut cx, shared_engine, &[], METHODS)?;
     prevent_gc(&mut cx, object)?;

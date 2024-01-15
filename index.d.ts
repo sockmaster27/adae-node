@@ -19,7 +19,7 @@ declare module "adae-node" {
         /**
          * Create a dummy engine, for testing purposes.
          */
-        static dummy(): Engine;
+        static getDummy(): Engine;
 
         /**
          * Create and initialize a new engine with the given configuration.
@@ -177,7 +177,7 @@ declare module "adae-node" {
         /**
          * Unique identifier of the track.
          * */
-        key(): number;
+        getKey(): number;
 
         /**
          * Get all clips on the track.
@@ -189,7 +189,7 @@ declare module "adae-node" {
          *
          * @param clip      The stored clip, as returned by {@linkcode Engine.importAudioClip()}.
          * @param start     The start position of the clip.
-         * @param length    The length of the clip. If `null`, the entire clip is used.
+         * @param length    The length of the clip. If not set, the entire clip is used.
          */
         addClip(
             clip: StoredAudioClip,
@@ -252,7 +252,7 @@ declare module "adae-node" {
         /**
          * Unique identifier of the clip.
          */
-        key(): number;
+        getKey(): number;
     }
     class StoredAudioClip extends StoredClip {
         #type: "StoredAudioClip";
@@ -261,15 +261,15 @@ declare module "adae-node" {
         /**
          * Original sample rate of the audio file.
          */
-        sampleRate(): number;
+        getSampleRate(): number;
 
         /**
          * Get the full length of the clip in samples (per channel).
          *
          * This is relative to the sample rate of the clip, which is not necessarily the same as the sample rate of the engine
-         * (See {@linkcode StoredAudioClip.sampleRate()}).
+         * (See {@linkcode StoredAudioClip.getSampleRate()}).
          */
-        length(): number;
+        getLength(): number;
     }
 
     /**
@@ -279,18 +279,18 @@ declare module "adae-node" {
         /**
          * Unique identifier of the clip.
          */
-        key(): number;
+        getKey(): number;
 
         /**
          * Get the start position of the clip.
          */
-        start(): Timestamp;
+        getStart(): Timestamp;
         /**
          * Get the length of the clip.
          *
          * If `null`, the entire stored clip is used.
          */
-        length(): Timestamp | null;
+        getLength(): Timestamp | null;
 
         /**
          * Set the start position of the clip.
@@ -310,7 +310,7 @@ declare module "adae-node" {
         /**
          * Get the referenced stored clip.
          */
-        storedClip(): StoredClip;
+        getStoredClip(): StoredClip;
 
         /**
          * Delete clip from track.
@@ -330,7 +330,7 @@ declare module "adae-node" {
         /**
          * Get the clip in the store that this clip references.
          */
-        storedClip(): StoredAudioClip;
+        getStoredClip(): StoredAudioClip;
 
         /**
          * Delte this clip from the track.
@@ -427,14 +427,10 @@ declare module "adae-node" {
 
     /**
      * Scaling function used by {@linkcode Track.readMeter()}.
-     *
-     * Read only.
      */
     function meterScale(value: number): number;
     /**
      * Inverse of scaling used by {@linkcode Track.readMeter()}.
-     *
-     * Useful for volume slider in proximity to a meter.
      */
     function inverseMeterScale(value: number): number;
 

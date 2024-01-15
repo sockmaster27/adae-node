@@ -39,7 +39,7 @@ pub mod stored_audio_clip {
     }
 
     const METHODS: &[(&str, Method)] = &[
-        ("key", |mut cx| {
+        ("getKey", |mut cx| {
             unpack_this(
                 &mut cx,
                 |cx, data: &(SharedEngine, adae::StoredAudioClipKey)| {
@@ -48,12 +48,12 @@ pub mod stored_audio_clip {
                 },
             )
         }),
-        ("sampleRate", |mut cx| {
+        ("getSampleRate", |mut cx| {
             unpack_this_stored_clip(&mut cx, |cx, clip| {
                 Ok(cx.number(clip.sample_rate() as f64).as_value(cx))
             })
         }),
-        ("length", |mut cx| {
+        ("getLength", |mut cx| {
             unpack_this_stored_clip(&mut cx, |cx, clip| {
                 Ok(cx.number(clip.length() as f64).as_value(cx))
             })

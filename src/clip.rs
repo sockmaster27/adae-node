@@ -87,7 +87,7 @@ pub mod audio_clip {
     }
 
     const METHODS: &[(&str, Method)] = &[
-        ("key", |mut cx| {
+        ("getKey", |mut cx| {
             unpack_this(
                 &mut cx,
                 |cx, (_, _, key): &(SharedEngine, adae::TimelineTrackKey, adae::AudioClipKey)| {
@@ -95,10 +95,10 @@ pub mod audio_clip {
                 },
             )
         }),
-        ("start", |mut cx| {
+        ("getStart", |mut cx| {
             unpack_this_clip(&mut cx, |cx, clip| timestamp::construct(cx, clip.start))
         }),
-        ("length", |mut cx| {
+        ("getLength", |mut cx| {
             unpack_this_clip(&mut cx, |cx, clip| match clip.length {
                 Some(length) => timestamp::construct(cx, length),
                 None => Ok(cx.null().upcast()),
@@ -171,7 +171,7 @@ pub mod audio_clip {
                 },
             )
         }),
-        ("storedClip", |mut cx| {
+        ("getStoredClip", |mut cx| {
             encapsulator::unpack_this(
                 &mut cx,
                 |cx,

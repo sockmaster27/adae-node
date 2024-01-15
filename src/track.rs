@@ -142,7 +142,7 @@ pub mod audio_track {
         ("setVolume", |mut cx| unpack_this_track(&mut cx, set_volume)),
         ("readMeter", |mut cx| unpack_this_track(&mut cx, read_meter)),
         ("snapMeter", |mut cx| unpack_this_track(&mut cx, snap_meter)),
-        ("key", |mut cx| {
+        ("getKey", |mut cx| {
             unpack_this_audio_track(&mut cx, |cx, audio_track| {
                 let mut s = DefaultHasher::new();
                 audio_track.hash(&mut s);

@@ -20,7 +20,7 @@ describe("Engine", () => {
         });
 
         test("Dummy constructor", () => {
-            expect(Engine.dummy()).toBeDefined();
+            expect(Engine.getDummy()).toBeDefined();
         });
     });
 
@@ -35,7 +35,7 @@ describe("Engine", () => {
 
     let engine: any;
     beforeEach(() => {
-        engine = Engine.dummy();
+        engine = Engine.getDummy();
     });
     afterEach(() => {
         engine.close();
@@ -72,10 +72,10 @@ describe("Engine", () => {
 
         describe("Audio track addition and deletion", () => {
             function tracksEqual(track1: any, track2: any): [boolean, string] {
-                if (track1.key() !== track2.key())
+                if (track1.getKey() !== track2.getKey())
                     return [
                         false,
-                        `Keys mismatched: ${track1.key()} != ${track2.key()}`,
+                        `Keys mismatched: ${track1.getKey()} != ${track2.getKey()}`,
                     ];
 
                 let equal = true;
@@ -122,7 +122,9 @@ describe("Engine", () => {
             test("Get track from key fails when track is deleted", () => {
                 const track = engine.addAudioTrack();
                 engine.deleteAudioTrack(track);
-                expect(() => engine.getAudioTrack(track.key())).toThrowError();
+                expect(() =>
+                    engine.getAudioTrack(track.getKey()),
+                ).toThrowError();
             });
 
             test("Add single track", () => {
@@ -224,7 +226,7 @@ describe("Engine", () => {
                     expect(engine[method]).toThrowError();
 
                 // So cleanup can run
-                engine = Engine.dummy();
+                engine = Engine.getDummy();
             });
         });
 
@@ -243,7 +245,7 @@ describe("Engine", () => {
                 testTrackCommon();
 
                 test("Has key", () => {
-                    expect(typeof track.key()).toBe("number");
+                    expect(typeof track.getKey()).toBe("number");
                 });
 
                 test("getClips()", () => {
@@ -297,7 +299,7 @@ describe("Engine", () => {
                     const state = track.deleteClip(clip1);
                     const clip2 = track.reconstructClip(state);
 
-                    expect(clip1.key()).toBe(clip2.key());
+                    expect(clip1.getKey()).toBe(clip2.getKey());
                 });
 
                 test("reconstructClips()", () => {
@@ -317,8 +319,8 @@ describe("Engine", () => {
 
                     expect(timelineClips1.length).toBe(timelineClips2.length);
                     for (let i = 0; i < timelineClips1.length; i++) {
-                        expect(timelineClips1[i].key()).toBe(
-                            timelineClips2[i].key(),
+                        expect(timelineClips1[i].getKey()).toBe(
+                            timelineClips2[i].getKey(),
                         );
                     }
                 });
@@ -326,7 +328,7 @@ describe("Engine", () => {
                 test("delete() deletes track", () => {
                     track.delete();
                     expect(() =>
-                        engine.getAudioTrack(track.key()),
+                        engine.getAudioTrack(track.getKey()),
                     ).toThrowError();
                 });
 
@@ -340,7 +342,7 @@ describe("Engine", () => {
                         "readMeter",
                         "snapMeter",
 
-                        "key",
+                        "getKey",
                         "getClips",
                         "addClip",
                         "deleteClip",
@@ -399,19 +401,19 @@ describe("Engine", () => {
             expect(() => engine.importAudioClip("nonexistent")).toThrowError();
         });
 
-        test("key()", () => {
+        test("getKey()", () => {
             const clip = importTestClip();
-            expect(clip.key()).toBeDefined();
+            expect(clip.getKey()).toBeDefined();
         });
 
-        test("sampleRate()", () => {
+        test("getSampleRate()", () => {
             const clip = importTestClip();
-            expect(clip.sampleRate()).toBe(48_000);
+            expect(clip.getSampleRate()).toBe(48_000);
         });
 
-        test("length()", () => {
+        test("getLength()", () => {
             const clip = importTestClip();
-            expect(clip.length()).toBe(1_322_978);
+            expect(clip.getLength()).toBe(1_322_978);
         });
     });
 
@@ -427,48 +429,54 @@ describe("Engine", () => {
             );
         });
 
-        test("key()", () => {
-            expect(typeof clip.key()).toBe("number");
+        test("getKey()", () => {
+            expect(typeof clip.getKey()).toBe("number");
         });
 
-        test("start()", () => {
-            expect(clip.start().getBeats()).toBe(1);
+        test("getStart()", () => {
+            expect(clip.getStart().getBeats()).toBe(1);
         });
 
-        test("length()", () => {
-            expect(clip.length().getBeats()).toBe(2);
+        test("getLength()", () => {
+            expect(clip.getLength().getBeats()).toBe(2);
         });
 
-        test("length() null", () => {
+        test("getLength() null", () => {
             const track = engine.addAudioTrack();
             clip = track.addClip(importTestClip(), Timestamp.fromBeats(1));
-            expect(clip.length()).toBeNull();
+            expect(clip.getLength()).toBeNull();
         });
 
         test("move()", () => {
             clip.move(Timestamp.fromBeats(2));
-            expect(clip.start().getBeats()).toBe(2);
+            expect(clip.getStart().getBeats()).toBe(2);
         });
 
         test("cropStart()", () => {
             clip.cropStart(Timestamp.fromBeats(1));
-            expect(clip.start().getBeats()).toBe(2);
-            expect(clip.length().getBeats()).toBe(1);
+            expect(clip.getStart().getBeats()).toBe(2);
+            expect(clip.getLength().getBeats()).toBe(1);
         });
 
         test("cropEnd()", () => {
             clip.cropEnd(Timestamp.fromBeats(1));
-            expect(clip.start().getBeats()).toBe(1);
-            expect(clip.length().getBeats()).toBe(1);
+            expect(clip.getStart().getBeats()).toBe(1);
+            expect(clip.getLength().getBeats()).toBe(1);
         });
 
-        test("storedClip()", () => {
-            expect(clip.storedClip()).toBeDefined();
+        test("getStoredClip()", () => {
+            expect(clip.getStoredClip()).toBeDefined();
         });
 
         test("delete()", () => {
             expect(clip.delete()).toBeDefined();
-            const methods = ["key", "start", "length", "storedClip", "delete"];
+            const methods = [
+                "getKey",
+                "getStart",
+                "getLength",
+                "getStoredClip",
+                "delete",
+            ];
 
             for (const method of methods) expect(clip[method]).toThrowError();
         });
