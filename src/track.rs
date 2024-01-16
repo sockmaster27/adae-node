@@ -309,7 +309,7 @@ pub mod audio_track {
         }),
         ("reconstructClip", |mut cx| {
             let state_js = cx.argument::<JsObject>(0)?;
-            let state = audio_clip::unapck_state(&mut cx, state_js)?;
+            let state = audio_clip::unpack_state(&mut cx, state_js)?;
 
             unpack_this(
                 &mut cx,
@@ -335,7 +335,7 @@ pub mod audio_track {
                 .iter()
                 .map(|state_js| {
                     let state_obj = state_js.downcast_or_throw(&mut cx)?;
-                    audio_clip::unapck_state(&mut cx, state_obj)
+                    audio_clip::unpack_state(&mut cx, state_obj)
                 })
                 .collect::<NeonResult<Vec<_>>>()?;
 

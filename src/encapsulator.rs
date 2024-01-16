@@ -1,4 +1,4 @@
-use neon::{prelude::*, result::Throw};
+use neon::prelude::*;
 
 use std::fmt::Debug;
 
@@ -41,7 +41,7 @@ where
 }
 
 /// Places a [`Root`] on the object, ensuring that it isn't garbage collected.
-pub fn prevent_gc(cx: &mut FunctionContext, object: Handle<JsObject>) -> Result<(), Throw> {
+pub fn prevent_gc(cx: &mut FunctionContext, object: Handle<JsObject>) -> NeonResult<()> {
     let root = object.root(cx);
     let boxed_root = cx.boxed(root);
     object.set(cx, ROOT_KEY, boxed_root)?;
@@ -57,7 +57,7 @@ pub fn prevent_gc(cx: &mut FunctionContext, object: Handle<JsObject>) -> Result<
 pub fn unpack_this<'a, D, R, F>(cx: &mut MethodContext<'a, JsObject>, callback: F) -> NeonResult<R>
 where
     D: 'static + Finalize + Send,
-    F: FnOnce(&mut MethodContext<'a, JsObject>, &D) -> Result<R, Throw>,
+    F: FnOnce(&mut MethodContext<'a, JsObject>, &D) -> NeonResult<R>,
 {
     let boxed: Handle<JsBox<D>> = cx.this().get(cx, DATA_KEY)?;
     let data = &**boxed;
@@ -69,10 +69,32 @@ pub fn unpack<'a, C, D, F, R>(cx: &mut C, obj: Handle<'a, JsObject>, callback: F
 where
     C: Context<'a>,
     D: 'static + Finalize + Send + Debug,
-    F: FnOnce(&mut C, &D) -> Result<R, Throw>,
+    F: FnOnce(&mut C, &D) -> NeonResult<R>,
 {
     let boxed: Handle<JsBox<D>> = obj.get(cx, DATA_KEY)?;
     let data = &**boxed;
 
     callback(cx, data)
+}
+
+/// Update the data stored in the object via a closure.
+pub fn update_data<'a, C, D, F>(
+    cx: &mut C,
+    obj: Handle<'a, JsObject>,
+    callback: F,
+) -> NeonResult<()>
+where
+    C: Context<'a>,
+    D: 'static + Finalize + Send + Debug,
+    F: FnOnce(&mut C, &D) -> NeonResult<D>,
+{
+    let old_boxed: Handle<JsBox<D>> = obj.get(cx, DATA_KEY)?;
+    let old_data = &**old_boxed;
+
+    let new_data = callback(cx, old_data)?;
+    let new_boxed = cx.boxed(new_data);
+
+    obj.set(cx, DATA_KEY, new_boxed)?;
+
+    Ok(())
 }

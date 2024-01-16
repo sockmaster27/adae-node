@@ -73,7 +73,7 @@ pub mod audio_clip {
         )
     }
 
-    pub fn unapck_state<'a, C>(
+    pub fn unpack_state<'a, C>(
         cx: &mut C,
         state_obj: Handle<'a, JsObject>,
     ) -> NeonResult<adae::AudioClipState>

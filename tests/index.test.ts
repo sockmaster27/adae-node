@@ -415,10 +415,11 @@ describe("Engine", () => {
     });
 
     describe("Timeline audio clip", () => {
+        let track: any;
         let clip: any;
 
         beforeEach(() => {
-            const track = engine.addAudioTrack();
+            track = engine.addAudioTrack();
             clip = track.addClip(
                 importTestClip(),
                 Timestamp.fromBeats(1),
@@ -476,6 +477,15 @@ describe("Engine", () => {
             ];
 
             for (const method of methods) expect(clip[method]).toThrow();
+        });
+
+        test("Move clip to another track", () => {
+            const track2 = engine.addAudioTrack();
+
+            engine.moveAudioClipToTrack(clip, track2);
+
+            expect(track.getClips().length).toBe(0);
+            expect(track2.getClips().length).toBe(1);
         });
     });
 });

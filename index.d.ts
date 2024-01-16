@@ -115,6 +115,11 @@ declare module "adae-node" {
         importAudioClip(path: string): StoredAudioClip;
 
         /**
+         * Move clip to another track.
+         */
+        moveAudioClipToTrack(clip: AudioClip, newTrack: AudioTrack): void;
+
+        /**
          * Closes down the engine gracefully.
          * After this is called all other methods will throw an {@linkcode Error}.
          */
