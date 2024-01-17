@@ -5,6 +5,8 @@ use std::{
     hash::{Hash, Hasher},
 };
 
+use crate::clip::audio_clip::AudioClipKeyWrapper;
+use crate::stored_clip::stored_audio_clip::StoredAudioClipKeyWrapper;
 use crate::{clip::audio_clip, encapsulator::unpack, timestamp::timestamp};
 use crate::{
     encapsulator::{encapsulate, unpack_this, Method},
@@ -48,6 +50,7 @@ pub mod master {
 }
 
 pub mod audio_track {
+
     use super::*;
 
     /// The returned object must adhere to the interface defined in the `index.d.ts` file.
@@ -176,9 +179,8 @@ pub mod audio_track {
             let audio_clip_key = unpack(
                 &mut cx,
                 audio_clip_js,
-                |_, data: &(SharedEngine, adae::StoredAudioClipKey)| {
-                    let (_, ack) = data;
-                    Ok(*ack)
+                |_, (_, stored_clip_key): &(SharedEngine, StoredAudioClipKeyWrapper)| {
+                    Ok(**stored_clip_key)
                 },
             )?;
 
@@ -227,10 +229,10 @@ pub mod audio_track {
             unpack(
                 &mut cx,
                 clip_js,
-                |cx, (shared_engine, clip_key): &(SharedEngine, adae::AudioClipKey)| {
+                |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
-                            .delete_audio_clip(*clip_key)
+                            .delete_audio_clip(**clip_key)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                         Ok(state.as_value(cx))
@@ -249,7 +251,7 @@ pub mod audio_track {
                     unpack(
                         &mut cx,
                         clip_obj,
-                        |_, (_, clip_key): &(SharedEngine, adae::AudioClipKey)| Ok(*clip_key),
+                        |_, (_, clip_key): &(SharedEngine, AudioClipKeyWrapper)| Ok(**clip_key),
                     )
                 })
                 .collect::<NeonResult<Vec<_>>>()?;
@@ -335,27 +337,27 @@ pub mod audio_track {
             })
         }),
     ];
-}
 
-#[derive(Clone, Debug)]
-pub struct AudioTrackWrapper(pub adae::AudioTrack);
-impl Deref for AudioTrackWrapper {
-    type Target = adae::AudioTrack;
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    #[derive(Clone, Debug)]
+    pub struct AudioTrackWrapper(pub adae::AudioTrack);
+    impl Deref for AudioTrackWrapper {
+        type Target = adae::AudioTrack;
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
     }
-}
-impl Finalize for AudioTrackWrapper {}
+    impl Finalize for AudioTrackWrapper {}
 
-#[derive(Debug)]
-pub struct AudioTrackStateWrapper(pub adae::AudioTrackState);
-impl Deref for AudioTrackStateWrapper {
-    type Target = adae::AudioTrackState;
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    #[derive(Debug)]
+    pub struct AudioTrackStateWrapper(pub adae::AudioTrackState);
+    impl Deref for AudioTrackStateWrapper {
+        type Target = adae::AudioTrackState;
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
     }
+    impl Finalize for AudioTrackStateWrapper {}
 }
-impl Finalize for AudioTrackStateWrapper {}
 
 // Shared methods
 fn get_panning<'a>(

@@ -12,6 +12,7 @@ mod track;
 
 use std::path::Path;
 
+use clip::audio_clip::AudioClipKeyWrapper;
 use neon::prelude::*;
 
 use custom_output::get_debug;
@@ -22,7 +23,10 @@ use panic_handling::{listen_for_crash, stop_listening_for_crash};
 use shared_engine::SharedEngine;
 use stored_clip::stored_audio_clip;
 use timestamp::timestamp;
-use track::{audio_track, master, AudioTrackStateWrapper};
+use track::{
+    audio_track::{self, AudioTrackStateWrapper},
+    master,
+};
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
@@ -313,7 +317,7 @@ const METHODS: &[(&str, Method)] = &[
         let clip_key = unpack(
             &mut cx,
             clip_js,
-            |_, (_, clip_key): &(SharedEngine, adae::AudioClipKey)| Ok(*clip_key),
+            |_, (_, clip_key): &(SharedEngine, AudioClipKeyWrapper)| Ok(**clip_key),
         )?;
 
         let track_js: Handle<JsObject> = cx.argument(1)?;

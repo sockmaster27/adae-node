@@ -17,7 +17,7 @@ pub mod audio_clip {
         clip_key: adae::AudioClipKey,
         engine: SharedEngine,
     ) -> JsResult<'a, JsObject> {
-        let object = encapsulate(cx, (engine, clip_key), &[], METHODS)?;
+        let object = encapsulate(cx, (engine, AudioClipKeyWrapper(clip_key)), &[], METHODS)?;
         Ok(object)
     }
 
@@ -30,10 +30,10 @@ pub mod audio_clip {
     {
         encapsulator::unpack_this(
             cx,
-            |cx, (shared_engine, clip_key): &(SharedEngine, adae::AudioClipKey)| {
+            |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                 shared_engine.with_inner(cx, |cx, engine| {
                     let clip = engine
-                        .audio_clip(*clip_key)
+                        .audio_clip(**clip_key)
                         .or_else(|e| cx.throw_error(format!("{e}")))?;
                     callback(cx, clip)
                 })
@@ -48,10 +48,10 @@ pub mod audio_clip {
         encapsulator::unpack(
             cx,
             clip_obj,
-            |cx, (shared_engine, clip_key): &(SharedEngine, adae::AudioClipKey)| {
+            |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                 shared_engine.with_inner(cx, |cx, engine| {
                     let state = engine
-                        .audio_clip(*clip_key)
+                        .audio_clip(**clip_key)
                         .or_else(|e| cx.throw_error(format!("{e}")))?
                         .state();
 
@@ -79,8 +79,9 @@ pub mod audio_clip {
         ("getKey", |mut cx| {
             unpack_this(
                 &mut cx,
-                |cx, (_, key): &(SharedEngine, adae::AudioClipKey)| {
-                    Ok(cx.number(*key).as_value(cx))
+                |cx, (_, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
+                    let key: u32 = (**clip_key).into();
+                    Ok(cx.number(key).as_value(cx))
                 },
             )
         }),
@@ -90,14 +91,14 @@ pub mod audio_clip {
         ("getLength", |mut cx| {
             encapsulator::unpack_this(
                 &mut cx,
-                |cx, (shared_engine, clip_key): &(SharedEngine, adae::AudioClipKey)| {
+                |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
                         let config = &engine.config().output_config;
                         let sample_rate = config.sample_rate;
                         let bpm_cents = engine.bpm_cents();
 
                         let clip = engine
-                            .audio_clip(*clip_key)
+                            .audio_clip(**clip_key)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
                         timestamp::construct(cx, clip.current_length(sample_rate, bpm_cents))
                     })
@@ -110,10 +111,10 @@ pub mod audio_clip {
 
             encapsulator::unpack_this(
                 &mut cx,
-                |cx, (shared_engine, clip_key): &(SharedEngine, adae::AudioClipKey)| {
+                |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
-                            .audio_clip_move(*clip_key, new_start)
+                            .audio_clip_move(**clip_key, new_start)
                             .or_else(|e| cx.throw_error(format!("Failed to move clip: {e}")))?;
                         Ok(cx.undefined().as_value(cx))
                     })
@@ -126,10 +127,10 @@ pub mod audio_clip {
 
             encapsulator::unpack_this(
                 &mut cx,
-                |cx, (shared_engine, clip_key): &(SharedEngine, adae::AudioClipKey)| {
+                |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
-                            .audio_clip_crop_start(*clip_key, new_length)
+                            .audio_clip_crop_start(**clip_key, new_length)
                             .or_else(|e| {
                                 cx.throw_error(format!("Failed to crop start of clip: {e}"))
                             })?;
@@ -144,10 +145,10 @@ pub mod audio_clip {
 
             encapsulator::unpack_this(
                 &mut cx,
-                |cx, (shared_engine, clip_key): &(SharedEngine, adae::AudioClipKey)| {
+                |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
-                            .audio_clip_crop_end(*clip_key, new_length)
+                            .audio_clip_crop_end(**clip_key, new_length)
                             .or_else(|e| {
                                 cx.throw_error(format!("Failed to crop end of clip: {e}"))
                             })?;
@@ -159,10 +160,10 @@ pub mod audio_clip {
         ("getStoredClip", |mut cx| {
             encapsulator::unpack_this(
                 &mut cx,
-                |cx, (shared_engine, clip_key): &(SharedEngine, adae::AudioClipKey)| {
+                |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
                         let clip = engine
-                            .audio_clip(*clip_key)
+                            .audio_clip(**clip_key)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                         Ok(stored_audio_clip::construct(
@@ -178,13 +179,13 @@ pub mod audio_clip {
         ("delete", |mut cx| {
             encapsulator::unpack_this(
                 &mut cx,
-                |cx, (shared_engine, clip_key): &(SharedEngine, adae::AudioClipKey)| {
+                |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     let this = cx.this();
                     let state = state_of(cx, this)?;
 
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
-                            .delete_audio_clip(*clip_key)
+                            .delete_audio_clip(**clip_key)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
                         Ok(state.as_value(cx))
                     })
@@ -192,6 +193,16 @@ pub mod audio_clip {
             )
         }),
     ];
+
+    #[derive(Debug)]
+    pub struct AudioClipKeyWrapper(pub adae::AudioClipKey);
+    impl Deref for AudioClipKeyWrapper {
+        type Target = adae::AudioClipKey;
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+    impl Finalize for AudioClipKeyWrapper {}
 
     #[derive(Debug)]
     pub struct AudioClipStateWrapper(pub adae::AudioClipState);

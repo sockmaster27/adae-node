@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::sync::Arc;
 
 use neon::prelude::*;
@@ -17,7 +18,12 @@ pub mod stored_audio_clip {
         clip_key: adae::StoredAudioClipKey,
         engine: SharedEngine,
     ) -> JsResult<'a, JsObject> {
-        let object = encapsulate(cx, (engine, clip_key), &[], METHODS)?;
+        let object = encapsulate(
+            cx,
+            (engine, StoredAudioClipKeyWrapper(clip_key)),
+            &[],
+            METHODS,
+        )?;
         Ok(object)
     }
 
@@ -28,23 +34,25 @@ pub mod stored_audio_clip {
     where
         F: FnOnce(&mut CallContext<'a, JsObject>, Arc<adae::StoredAudioClip>) -> NeonResult<R>,
     {
-        unpack_this(cx, |cx, data: &(SharedEngine, adae::StoredAudioClipKey)| {
-            let (shared_engine, clip_key) = data;
-            shared_engine.with_inner(cx, |cx, engine| {
-                let clip = engine.stored_audio_clip(*clip_key).unwrap();
+        unpack_this(
+            cx,
+            |cx, (shared_engine, clip_key): &(SharedEngine, StoredAudioClipKeyWrapper)| {
+                shared_engine.with_inner(cx, |cx, engine| {
+                    let clip = engine.stored_audio_clip(**clip_key).unwrap();
 
-                callback(cx, clip)
-            })
-        })
+                    callback(cx, clip)
+                })
+            },
+        )
     }
 
     const METHODS: &[(&str, Method)] = &[
         ("getKey", |mut cx| {
             unpack_this(
                 &mut cx,
-                |cx, data: &(SharedEngine, adae::StoredAudioClipKey)| {
-                    let &(_, clip_key) = data;
-                    Ok(cx.number(clip_key).as_value(cx))
+                |cx, (_, clip_key): &(SharedEngine, StoredAudioClipKeyWrapper)| {
+                    let key: u32 = (**clip_key).into();
+                    Ok(cx.number(key).as_value(cx))
                 },
             )
         }),
@@ -59,4 +67,14 @@ pub mod stored_audio_clip {
             })
         }),
     ];
+
+    #[derive(Clone, Debug)]
+    pub struct StoredAudioClipKeyWrapper(pub adae::StoredAudioClipKey);
+    impl Deref for StoredAudioClipKeyWrapper {
+        type Target = adae::StoredAudioClipKey;
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+    impl Finalize for StoredAudioClipKeyWrapper {}
 }
