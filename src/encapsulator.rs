@@ -76,25 +76,3 @@ where
 
     callback(cx, data)
 }
-
-/// Update the data stored in the object via a closure.
-pub fn update_data<'a, C, D, F>(
-    cx: &mut C,
-    obj: Handle<'a, JsObject>,
-    callback: F,
-) -> NeonResult<()>
-where
-    C: Context<'a>,
-    D: 'static + Finalize + Send + Debug,
-    F: FnOnce(&mut C, &D) -> NeonResult<D>,
-{
-    let old_boxed: Handle<JsBox<D>> = obj.get(cx, DATA_KEY)?;
-    let old_data = &**old_boxed;
-
-    let new_data = callback(cx, old_data)?;
-    let new_boxed = cx.boxed(new_data);
-
-    obj.set(cx, DATA_KEY, new_boxed)?;
-
-    Ok(())
-}

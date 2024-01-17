@@ -17,7 +17,7 @@ use neon::prelude::*;
 use custom_output::get_debug;
 #[cfg(feature = "custom_debug_output")]
 use custom_output::output_debug;
-use encapsulator::{encapsulate, prevent_gc, unpack, unpack_this, update_data, Method};
+use encapsulator::{encapsulate, prevent_gc, unpack, unpack_this, Method};
 use panic_handling::{listen_for_crash, stop_listening_for_crash};
 use shared_engine::SharedEngine;
 use stored_clip::stored_audio_clip;
@@ -310,15 +310,10 @@ const METHODS: &[(&str, Method)] = &[
     }),
     ("moveAudioClipToTrack", |mut cx| {
         let clip_js: Handle<JsObject> = cx.argument(0)?;
-        let (old_track_key, clip_key) = unpack(
+        let clip_key = unpack(
             &mut cx,
             clip_js,
-            |_,
-             (_, track_key, clip_key): &(
-                SharedEngine,
-                adae::TimelineTrackKey,
-                adae::AudioClipKey,
-            )| Ok((*track_key, *clip_key)),
+            |_, (_, clip_key): &(SharedEngine, adae::AudioClipKey)| Ok(*clip_key),
         )?;
 
         let track_js: Handle<JsObject> = cx.argument(1)?;
@@ -328,25 +323,12 @@ const METHODS: &[(&str, Method)] = &[
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
                 engine
-                    .audio_clip_move_to_track(old_track_key, clip_key, new_track_key)
+                    .audio_clip_move_to_track(clip_key, new_track_key)
                     .or_else(|e| cx.throw_error(format! {"{}", &e}))?;
 
                 Ok(())
-            })?;
-
-            Ok(())
+            })
         })?;
-
-        update_data(
-            &mut cx,
-            clip_js,
-            |_,
-             (shared_engine, _, clip_key): &(
-                SharedEngine,
-                adae::TimelineTrackKey,
-                adae::AudioClipKey,
-            )| Ok((SharedEngine::clone(shared_engine), new_track_key, *clip_key)),
-        )?;
 
         Ok(cx.undefined().as_value(&mut cx))
     }),
