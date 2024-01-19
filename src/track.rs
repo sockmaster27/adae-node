@@ -1,9 +1,5 @@
 use neon::prelude::*;
 use std::ops::Deref;
-use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-};
 
 use crate::clip::audio_clip::AudioClipKeyWrapper;
 use crate::stored_clip::stored_audio_clip::StoredAudioClipKeyWrapper;
@@ -50,64 +46,76 @@ pub mod master {
 }
 
 pub mod audio_track {
-
     use super::*;
 
     /// The returned object must adhere to the interface defined in the `index.d.ts` file.
     pub fn construct<'a>(
         cx: &mut FunctionContext<'a>,
-        audio_track: adae::AudioTrack,
+        audio_track_key: adae::AudioTrackKey,
         engine: SharedEngine,
     ) -> JsResult<'a, JsObject> {
-        let object = encapsulate(cx, (engine, AudioTrackWrapper(audio_track)), &[], METHODS)?;
+        let object = encapsulate(
+            cx,
+            (engine, AudioTrackKeyWrapper(audio_track_key)),
+            &[],
+            METHODS,
+        )?;
 
         Ok(object)
     }
 
-    pub fn unpack_audio_track<'a, C>(
+    pub fn unpack_audio_track_key<'a, C>(
         cx: &mut C,
         obj: Handle<'a, JsObject>,
-    ) -> NeonResult<adae::AudioTrack>
+    ) -> NeonResult<adae::AudioTrackKey>
     where
         C: Context<'a>,
     {
-        let audio_track = unpack(cx, obj, |_cx, data: &(SharedEngine, AudioTrackWrapper)| {
-            let (_, audio_track) = data;
-            Ok(audio_track.0.clone())
-        })?;
+        let audio_track_key = unpack(
+            cx,
+            obj,
+            |_cx, data: &(SharedEngine, AudioTrackKeyWrapper)| {
+                let (_, audio_track_key) = data;
+                Ok(**audio_track_key)
+            },
+        )?;
 
-        Ok(audio_track)
+        Ok(audio_track_key)
     }
 
-    fn unpack_this_audio_track<'a, F, R>(
+    fn unpack_this_audio_track_key<'a, F, R>(
         cx: &mut CallContext<'a, JsObject>,
         callback: F,
     ) -> NeonResult<R>
     where
-        F: FnOnce(&mut CallContext<'a, JsObject>, &mut adae::AudioTrack) -> NeonResult<R>,
+        F: FnOnce(&mut CallContext<'a, JsObject>, &mut adae::AudioTrackKey) -> NeonResult<R>,
     {
-        let mut audio_track = unpack_this(cx, |_cx, data: &(SharedEngine, AudioTrackWrapper)| {
-            let (_, audio_track) = data;
-            Ok(audio_track.0.clone())
-        })?;
+        let mut audio_track_key =
+            unpack_this(cx, |_cx, data: &(SharedEngine, AudioTrackKeyWrapper)| {
+                let (_, audio_track_key) = data;
+                Ok(**audio_track_key)
+            })?;
 
-        callback(cx, &mut audio_track)
+        callback(cx, &mut audio_track_key)
     }
 
-    fn unpack_this_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> NeonResult<R>
+    fn unpack_this_mixer_track<'a, F, R>(
+        cx: &mut CallContext<'a, JsObject>,
+        callback: F,
+    ) -> NeonResult<R>
     where
         F: FnOnce(&mut CallContext<'a, JsObject>, &mut adae::MixerTrack) -> NeonResult<R>,
     {
-        unpack_this(cx, |cx, data: &(SharedEngine, AudioTrackWrapper)| {
-            let (shared_engine, audio_track) = data;
+        unpack_this(cx, |cx, data: &(SharedEngine, AudioTrackKeyWrapper)| {
+            let (shared_engine, audio_track_key) = data;
 
             shared_engine.with_inner(cx, |cx, engine| {
-                let track = match engine.mixer_track_mut(audio_track.mixer_track_key()) {
-                    Ok(track) => track,
-                    Err(_) => {
-                        return cx.throw_error("Audio track has been deleted");
-                    }
-                };
+                let mixer_track_key = engine
+                    .audio_mixer_track_key(**audio_track_key)
+                    .or_else(|e| cx.throw_error(format!("{e}")))?;
+                let track = engine
+                    .mixer_track_mut(mixer_track_key)
+                    .or_else(|e| cx.throw_error(format!("{e}")))?;
                 callback(cx, track)
             })
         })
@@ -116,50 +124,59 @@ pub mod audio_track {
     pub fn delete<'a, C>(
         cx: &mut C,
         shared_engine: &SharedEngine,
-        audio_track: adae::AudioTrack,
+        audio_track_key: adae::AudioTrackKey,
     ) -> JsResult<'a, JsObject>
     where
         C: Context<'a>,
     {
         shared_engine.with_inner(cx, |cx, engine| {
             let state = engine
-                .audio_track_state(&audio_track)
-                .or_else(|e| cx.throw_error(format!("{}", &e)))?;
+                .audio_track_state(audio_track_key)
+                .or_else(|e| cx.throw_error(format!("{e}")))?;
 
             engine
-                .delete_audio_track(audio_track.clone())
-                .or_else(|e| cx.throw_error(format!("{}", &e)))?;
+                .delete_audio_track(audio_track_key)
+                .or_else(|e| cx.throw_error(format!("{e}")))?;
 
             encapsulate(cx, AudioTrackStateWrapper(state), &[], &[])
         })
     }
 
     const METHODS: &[(&str, Method)] = &[
+        ("getKey", |mut cx| {
+            unpack_this_audio_track_key(&mut cx, |cx, audio_track_key| {
+                let key: u32 = (*audio_track_key).into();
+                Ok(cx.number(key).as_value(cx))
+            })
+        }),
         ("getPanning", |mut cx| {
-            unpack_this_track(&mut cx, get_panning)
+            unpack_this_mixer_track(&mut cx, get_panning)
         }),
         ("setPanning", |mut cx| {
-            unpack_this_track(&mut cx, set_panning)
+            unpack_this_mixer_track(&mut cx, set_panning)
         }),
-        ("getVolume", |mut cx| unpack_this_track(&mut cx, get_volume)),
-        ("setVolume", |mut cx| unpack_this_track(&mut cx, set_volume)),
-        ("readMeter", |mut cx| unpack_this_track(&mut cx, read_meter)),
-        ("snapMeter", |mut cx| unpack_this_track(&mut cx, snap_meter)),
-        ("getKey", |mut cx| {
-            unpack_this_audio_track(&mut cx, |cx, audio_track| {
-                let mut s = DefaultHasher::new();
-                audio_track.hash(&mut s);
-                let key = s.finish();
-                Ok(cx.number(key as f64).as_value(cx))
-            })
+        ("getVolume", |mut cx| {
+            unpack_this_mixer_track(&mut cx, get_volume)
+        }),
+        ("setVolume", |mut cx| {
+            unpack_this_mixer_track(&mut cx, set_volume)
+        }),
+        ("readMeter", |mut cx| {
+            unpack_this_mixer_track(&mut cx, read_meter)
+        }),
+        ("snapMeter", |mut cx| {
+            unpack_this_mixer_track(&mut cx, snap_meter)
         }),
         ("getClips", |mut cx| {
             unpack_this(
                 &mut cx,
-                |cx, (shared_engine, audio_track): &(SharedEngine, AudioTrackWrapper)| {
+                |cx, (shared_engine, audio_track_key): &(SharedEngine, AudioTrackKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
+                        let timeline_track_key = engine
+                            .audio_timeline_track_key(**audio_track_key)
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
                         let clips = engine
-                            .audio_clips(audio_track.timeline_track_key())
+                            .audio_clips(timeline_track_key)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                         let clips_js = JsArray::new(cx, clips.size_hint().0 as u32);
@@ -207,15 +224,13 @@ pub mod audio_track {
 
             unpack_this(
                 &mut cx,
-                |cx, (shared_engine, audio_track): &(SharedEngine, AudioTrackWrapper)| {
+                |cx, (shared_engine, audio_track_key): &(SharedEngine, AudioTrackKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
+                        let timeline_track_key = engine
+                            .audio_timeline_track_key(**audio_track_key)
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
                         let key = engine
-                            .add_audio_clip(
-                                audio_track.timeline_track_key(),
-                                audio_clip_key,
-                                start,
-                                length,
-                            )
+                            .add_audio_clip(timeline_track_key, audio_clip_key, start, length)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                         Ok(audio_clip::construct(cx, key, shared_engine.clone())?.as_value(cx))
@@ -265,7 +280,7 @@ pub mod audio_track {
 
             unpack_this(
                 &mut cx,
-                |cx, (shared_engine, _): &(SharedEngine, AudioTrackWrapper)| {
+                |cx, (shared_engine, _): &(SharedEngine, AudioTrackKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
                             .delete_audio_clips(&clip_keys)
@@ -281,12 +296,13 @@ pub mod audio_track {
 
             unpack_this(
                 &mut cx,
-                |cx, (shared_engine, track): &(SharedEngine, AudioTrackWrapper)| {
+                |cx, (shared_engine, audio_track_key): &(SharedEngine, AudioTrackKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
-                        let track_key = track.timeline_track_key();
-
+                        let timeline_track_key = engine
+                            .audio_timeline_track_key(**audio_track_key)
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
                         let clip_key = engine
-                            .reconstruct_audio_clip(track_key, state)
+                            .reconstruct_audio_clip(timeline_track_key, state)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                         let clip_js = audio_clip::construct(cx, clip_key, shared_engine.clone())?;
@@ -308,12 +324,14 @@ pub mod audio_track {
 
             unpack_this(
                 &mut cx,
-                |cx, (shared_engine, track): &(SharedEngine, AudioTrackWrapper)| {
+                |cx, (shared_engine, audio_track_key): &(SharedEngine, AudioTrackKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
-                        let track_key = track.timeline_track_key();
+                        let timeline_track_key = engine
+                            .audio_timeline_track_key(**audio_track_key)
+                            .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                         let clip_keys = engine
-                            .reconstruct_audio_clips(track_key, states)
+                            .reconstruct_audio_clips(timeline_track_key, states)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                         let clips_js = JsArray::new(cx, clip_keys.len() as u32);
@@ -329,24 +347,27 @@ pub mod audio_track {
             )
         }),
         ("delete", |mut cx| {
-            unpack_this(&mut cx, |cx, data: &(SharedEngine, AudioTrackWrapper)| {
-                let (shared_engine, audio_track) = data;
+            unpack_this(
+                &mut cx,
+                |cx, data: &(SharedEngine, AudioTrackKeyWrapper)| {
+                    let (shared_engine, audio_track_key) = data;
 
-                let boxed_state = delete(cx, shared_engine, audio_track.0.clone())?;
-                Ok(boxed_state.as_value(cx))
-            })
+                    let boxed_state = delete(cx, shared_engine, **audio_track_key)?;
+                    Ok(boxed_state.as_value(cx))
+                },
+            )
         }),
     ];
 
     #[derive(Clone, Debug)]
-    pub struct AudioTrackWrapper(pub adae::AudioTrack);
-    impl Deref for AudioTrackWrapper {
-        type Target = adae::AudioTrack;
+    pub struct AudioTrackKeyWrapper(pub adae::AudioTrackKey);
+    impl Deref for AudioTrackKeyWrapper {
+        type Target = adae::AudioTrackKey;
         fn deref(&self) -> &Self::Target {
             &self.0
         }
     }
-    impl Finalize for AudioTrackWrapper {}
+    impl Finalize for AudioTrackKeyWrapper {}
 
     #[derive(Debug)]
     pub struct AudioTrackStateWrapper(pub adae::AudioTrackState);

@@ -181,7 +181,7 @@ declare module "adae-node" {
 
         /**
          * Unique identifier of the track.
-         * */
+         */
         getKey(): number;
 
         /**
