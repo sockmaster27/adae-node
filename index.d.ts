@@ -302,11 +302,16 @@ declare module "adae-node" {
 
         /**
          * Set the length of the clip, keeping the end position fixed.
+         *
+         * If this would result in the clip being extended past the beginning of the stored clip, or the beginning of the timeline, it will be capped to this length.
+         * The resulting start and length can queried from {@linkcode getStart()} and {@linkcode getLength()} after this.
          */
         cropStart(newLength: Timestamp): void;
 
         /**
          * Set the length of the clip, keeping the start position fixed.
+         *
+         * If this results in the clip being extended past the end of the stored clip, the clip will be extended with silence.
          */
         cropEnd(newLength: Timestamp): void;
 
