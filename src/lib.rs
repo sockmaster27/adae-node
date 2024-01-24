@@ -340,7 +340,7 @@ const METHODS: &[(&str, Method)] = &[
     }),
     ("close", |mut cx| {
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
-            shared_engine.close(cx)?;
+            shared_engine.close();
 
             Ok(cx.undefined().as_value(cx))
         })

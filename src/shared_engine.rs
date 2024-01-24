@@ -1,11 +1,7 @@
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use neon::{
-    context::{CallContext, Context},
-    result::Throw,
-    types::{Finalize, JsObject},
-};
+use neon::{context::Context, result::Throw, types::Finalize};
 
 pub struct SharedEngine(
     // Arc allows each track to also have a reference
@@ -54,11 +50,12 @@ impl SharedEngine {
         callback(cx, engine)
     }
 
-    pub fn close(&self, cx: &mut CallContext<JsObject>) -> Result<(), Throw> {
-        let mut option = self.lock(cx)?;
-        let engine = option.take();
-        drop(engine);
-        Ok(())
+    pub fn close(&self) {
+        let lock_result = self.0.lock();
+        if let Ok(mut option) = lock_result {
+            drop(option.take());
+        }
+        // If the lock is poisoned, then the user has already been notified of the error, and nothing more should be done.
     }
 }
 impl Clone for SharedEngine {
