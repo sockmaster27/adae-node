@@ -86,21 +86,19 @@ pub mod audio_clip {
             )
         }),
         ("getStart", |mut cx| {
-            unpack_this_clip(&mut cx, |cx, clip| timestamp::construct(cx, clip.start))
+            unpack_this_clip(&mut cx, |cx, clip| timestamp::construct(cx, clip.start()))
         }),
         ("getLength", |mut cx| {
             encapsulator::unpack_this(
                 &mut cx,
                 |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
-                        let config = &engine.config().output_config;
-                        let sample_rate = config.sample_rate;
                         let bpm_cents = engine.bpm_cents();
 
                         let clip = engine
                             .audio_clip(**clip_key)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
-                        timestamp::construct(cx, clip.current_length(sample_rate, bpm_cents))
+                        timestamp::construct(cx, clip.length(bpm_cents))
                     })
                 },
             )
