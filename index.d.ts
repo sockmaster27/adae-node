@@ -1,18 +1,25 @@
 // "#type" is used to disallow two types being mixed up.
 // It doesn't actually exist at runtime.
+// This is necessary because TypeScript's structural type system can't distinguish two opaque types.
 
 declare module "adae-node" {
+    /**
+     * The base class of all Rust objects exposed to JS.
+     */
     abstract class ExposedObject {
         /**
-         * The internal data and state of the engine. Do not touch.
+         * The internal data and state of the object. Do not touch.
          */
         private data: unknown;
         /**
-         * Prevents the object from being prematurely garbage collected.
+         * If present, prevents the object from being prematurely garbage collected.
          */
         private root?: unknown;
     }
 
+    /**
+     * The Adae audio engine.
+     */
     class Engine extends ExposedObject {
         #type: "Engine";
 
@@ -64,22 +71,22 @@ declare module "adae-node" {
         getMaster(): MasterTrack;
 
         /**
-         * Get all tracks currently on the mixer.
+         * Get all audio tracks currently in the engine.
          */
         getAudioTracks(): AudioTrack[];
 
         /**
-         * Create new audio track, and add it to the mixer.
+         * Create new audio track, and add it to the engine.
          */
         addAudioTrack(): AudioTrack;
 
         /**
-         * Create new array of tracks, and add them to the mixer.
+         * Create new set of tracks, and add them to the engine.
          */
         addAudioTracks(count: number): AudioTrack[];
 
         /**
-         * Delete audio track, and remove it from the mixer.
+         * Delete audio track, and remove it from the engine.
          * After this is done, calling any method on the track will throw an {@linkcode Error}.
          *
          * Returns a state that can be passed to {@linkcode Engine.reconstructAudioTrack()}/{@linkcode reconstructAudioTracks()},
@@ -88,7 +95,7 @@ declare module "adae-node" {
         deleteAudioTrack(audioTrack: AudioTrack): AudioTrackState;
 
         /**
-         * Delete an array of audio tracks, and remove thme from the mixer.
+         * Delete a set of audio tracks, and remove them from the engine.
          * After this is done, calling any method on these tracks will throw an {@linkcode Error}.
          *
          * Returns an array of states that can be passed to {@linkcode Engine.reconstructAudioTrack()}/{@linkcode reconstructAudioTracks()},
@@ -103,7 +110,7 @@ declare module "adae-node" {
          */
         reconstructAudioTrack(state: AudioTrackState): AudioTrack;
         /**
-         * Reconstruct an array of audio tracks that have been deleted.
+         * Reconstruct a set of audio tracks that have been deleted.
          *
          * The states can be obtained by calling {@linkcode AudioTrack.delete()} or {@linkcode Engine.deleteAudioTrack()}/{@linkcode deleteAudioTracks()}.
          */
