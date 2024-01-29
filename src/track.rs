@@ -283,7 +283,7 @@ pub mod audio_track {
                 |cx, (shared_engine, _): &(SharedEngine, AudioTrackKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
                         engine
-                            .delete_audio_clips(&clip_keys)
+                            .delete_audio_clips(clip_keys)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
                         Ok(clip_states_js_array.as_value(cx))
                     })
@@ -334,8 +334,11 @@ pub mod audio_track {
                             .reconstruct_audio_clips(timeline_track_key, states)
                             .or_else(|e| cx.throw_error(format!("{e}")))?;
 
-                        let clips_js = JsArray::new(cx, clip_keys.len() as u32);
-                        for (i, &clip_key) in clip_keys.iter().enumerate() {
+                        let (lower_size_hint, upper_size_hint) = clip_keys.size_hint();
+                        let size_hint = upper_size_hint.unwrap_or(lower_size_hint);
+
+                        let clips_js = JsArray::new(cx, size_hint as u32);
+                        for (i, clip_key) in clip_keys.enumerate() {
                             let clip_js =
                                 audio_clip::construct(cx, clip_key, shared_engine.clone())?;
                             clips_js.set(cx, i as u32, clip_js)?;

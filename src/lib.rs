@@ -64,10 +64,11 @@ fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
             config::config_class::unpack(&mut cx, config_obj, |cx, config| {
                 let (engine, import_errors) = SharedEngine::new(config.clone())
                     .or_else(|e| cx.throw_error(format!("{e}")))?;
+
+                let import_errors_vec: Vec<adae::error::ImportError> = import_errors.collect();
                 debug_assert!(
-                    import_errors.is_empty(),
-                    "Import errors: {:?}",
-                    import_errors
+                    import_errors_vec.is_empty(),
+                    "Import errors: {import_errors_vec:?}"
                 );
                 Ok(engine)
             })?
@@ -189,7 +190,7 @@ const METHODS: &[(&str, Method)] = &[
                     .or_else(|e| cx.throw_error(format!("{e}")))?;
 
                 let new_tracks = cx.empty_array();
-                for (i, &audio_track_key) in tracks.iter().enumerate() {
+                for (i, audio_track_key) in tracks.enumerate() {
                     let track = audio_track::construct(
                         cx,
                         audio_track_key,
@@ -243,7 +244,7 @@ const METHODS: &[(&str, Method)] = &[
                 }
 
                 engine
-                    .delete_audio_tracks(&audio_track_keys)
+                    .delete_audio_tracks(audio_track_keys)
                     .or_else(|e| cx.throw_error(format! {"{e}"}))?;
 
                 Ok(state_array.as_value(cx))
@@ -282,7 +283,7 @@ const METHODS: &[(&str, Method)] = &[
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
                 let tracks = engine
-                    .reconstruct_audio_tracks(&states)
+                    .reconstruct_audio_tracks(states)
                     .or_else(|e| cx.throw_error(format! {"{e}"}))?;
 
                 let tracks_js = cx.empty_array();
