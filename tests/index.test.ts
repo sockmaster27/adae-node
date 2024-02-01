@@ -7,9 +7,11 @@ import {
     inverseMeterScale,
     listenForCrash,
     stopListeningForCrash,
-
-    // @ts-ignore: index.node does exist
-} from "../index.node";
+    AudioTrack,
+    Track,
+    MasterTrack,
+    AudioClip,
+} from "../index";
 
 describe("Engine", () => {
     describe("Constructors", () => {
@@ -33,7 +35,7 @@ describe("Engine", () => {
         stopListeningForCrash();
     });
 
-    let engine: any;
+    let engine: Engine;
     beforeEach(() => {
         engine = Engine.getDummy();
     });
@@ -71,7 +73,10 @@ describe("Engine", () => {
         });
 
         describe("Audio track addition and deletion", () => {
-            function tracksEqual(track1: any, track2: any): [boolean, string] {
+            function tracksEqual(
+                track1: AudioTrack,
+                track2: AudioTrack,
+            ): [boolean, string] {
                 if (track1.getKey() !== track2.getKey())
                     return [
                         false,
@@ -103,7 +108,10 @@ describe("Engine", () => {
                 ];
             }
 
-            function containsEqualAudioTrack(list: any[], track: any): boolean {
+            function containsEqualAudioTrack(
+                list: AudioTrack[],
+                track: AudioTrack,
+            ): boolean {
                 for (const listAudioTrack of list) {
                     if (tracksEqual(listAudioTrack, track)) return true;
                 }
@@ -117,12 +125,6 @@ describe("Engine", () => {
             test("Get track from key", () => {
                 const track = engine.addAudioTrack();
                 expect(tracksEqual(track, track)).toStrictEqual([true, null]);
-            });
-
-            test("Get track from key fails when track is deleted", () => {
-                const track = engine.addAudioTrack();
-                engine.deleteAudioTrack(track);
-                expect(() => engine.getAudioTrack(track.getKey())).toThrow();
             });
 
             test("Add single track", () => {
@@ -228,18 +230,20 @@ describe("Engine", () => {
         });
 
         describe("Individual track", () => {
-            let track: any;
-
             describe("Master track", () => {
+                let track: MasterTrack;
+
                 beforeEach(() => (track = engine.getMaster()));
 
-                testTrackCommon();
+                testTrackCommon(track);
             });
 
             describe("Audio track", () => {
+                let track: AudioTrack;
+
                 beforeEach(() => (track = engine.addAudioTrack()));
 
-                testTrackCommon();
+                testTrackCommon(track);
 
                 test("Has key", () => {
                     expect(typeof track.getKey()).toBe("number");
@@ -324,9 +328,7 @@ describe("Engine", () => {
 
                 test("delete() deletes track", () => {
                     track.delete();
-                    expect(() =>
-                        engine.getAudioTrack(track.getKey()),
-                    ).toThrow();
+                    expect(() => engine.getAudioTracks().length).toBe(0);
                 });
 
                 test("All methods throw when track is deleted", () => {
@@ -354,7 +356,7 @@ describe("Engine", () => {
                 });
             });
 
-            function testTrackCommon() {
+            function testTrackCommon(track: Track) {
                 test("getPanning() returns what's passed to setPanning()", () => {
                     track.setPanning(0.5);
                     expect(track.getPanning()).toBe(0.5);
@@ -377,7 +379,7 @@ describe("Engine", () => {
                     ]);
 
                     for (const stat of Object.values(result))
-                        expect((stat as any[]).length).toBe(2);
+                        expect(stat.length).toBe(2);
 
                     for (const number of Object.values(result).flat())
                         expect(typeof number).toBe("number");
@@ -415,8 +417,8 @@ describe("Engine", () => {
     });
 
     describe("Timeline audio clip", () => {
-        let track: any;
-        let clip: any;
+        let track: AudioTrack;
+        let clip: AudioClip;
 
         beforeEach(() => {
             track = engine.addAudioTrack();

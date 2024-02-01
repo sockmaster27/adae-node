@@ -1,5 +1,4 @@
-// @ts-ignore
-import { Timestamp } from "../index.node";
+import { Timestamp } from "../index";
 
 test("min()", () => {
     const timestamp1 = Timestamp.fromBeatUnits(42);
