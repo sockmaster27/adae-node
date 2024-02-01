@@ -9,7 +9,6 @@ import {
     stopListeningForCrash,
     AudioTrack,
     Track,
-    MasterTrack,
     AudioClip,
 } from "../index";
 
@@ -231,11 +230,7 @@ describe("Engine", () => {
 
         describe("Individual track", () => {
             describe("Master track", () => {
-                let track: MasterTrack;
-
-                beforeEach(() => (track = engine.getMaster()));
-
-                testTrackCommon(track);
+                testTrackCommon(() => engine.getMaster());
             });
 
             describe("Audio track", () => {
@@ -243,7 +238,7 @@ describe("Engine", () => {
 
                 beforeEach(() => (track = engine.addAudioTrack()));
 
-                testTrackCommon(track);
+                testTrackCommon(() => engine.addAudioTrack());
 
                 test("Has key", () => {
                     expect(typeof track.getKey()).toBe("number");
@@ -328,7 +323,11 @@ describe("Engine", () => {
 
                 test("delete() deletes track", () => {
                     track.delete();
-                    expect(() => engine.getAudioTracks().length).toBe(0);
+                    expect(
+                        engine
+                            .getAudioTracks()
+                            .some(t => t.getKey() === track.getKey()),
+                    ).toBe(false);
                 });
 
                 test("All methods throw when track is deleted", () => {
@@ -356,7 +355,11 @@ describe("Engine", () => {
                 });
             });
 
-            function testTrackCommon(track: Track) {
+            function testTrackCommon(initTrack: () => Track) {
+                let track: Track;
+
+                beforeEach(() => (track = initTrack()));
+
                 test("getPanning() returns what's passed to setPanning()", () => {
                     track.setPanning(0.5);
                     expect(track.getPanning()).toBe(0.5);
