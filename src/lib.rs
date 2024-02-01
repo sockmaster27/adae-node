@@ -145,7 +145,10 @@ const METHODS: &[(&str, Method)] = &[
     }),
     ("getMaster", |mut cx| {
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
+            shared_engine.assert_not_closed(cx)?;
+
             let track = master::construct(cx, SharedEngine::clone(shared_engine))?;
+
             Ok(track.as_value(cx))
         })
     }),

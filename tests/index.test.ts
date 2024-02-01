@@ -209,22 +209,28 @@ describe("Engine", () => {
             });
 
             test("All methods throw when engine is closed", () => {
+                const track = engine.addAudioTrack();
+                const trackState = engine.addAudioTrack().delete();
+
                 engine.close();
-                const methods = [
-                    "getMaster",
-                    "getAudioTracks",
-                    "addAudioTrack",
-                    "addAudioTracks",
-                    "deleteAudioTrack",
-                    "deleteAudioTracks",
-                    "importAudioClip",
-                    "close",
-                ];
 
-                for (const method of methods) expect(engine[method]).toThrow();
-
-                // So cleanup can run
-                engine = Engine.getDummy();
+                const msg = "Engine has already been closed.";
+                expect(() => engine.getConfig()).toThrow(msg);
+                expect(() => engine.play()).toThrow(msg);
+                expect(() => engine.pause()).toThrow(msg);
+                expect(() => engine.jumpTo(Timestamp.zero())).toThrow(msg);
+                expect(() => engine.getPlayheadPosition()).toThrow(msg);
+                expect(() => engine.getMaster()).toThrow(msg);
+                expect(() => engine.getAudioTracks()).toThrow(msg);
+                expect(() => engine.addAudioTrack()).toThrow(msg);
+                expect(() => engine.addAudioTracks(3)).toThrow(msg);
+                expect(() => engine.deleteAudioTrack(track)).toThrow(msg);
+                expect(() => engine.deleteAudioTracks([])).toThrow(msg);
+                expect(() => engine.reconstructAudioTrack(trackState)).toThrow(
+                    msg,
+                );
+                expect(() => engine.reconstructAudioTracks([])).toThrow(msg);
+                expect(() => engine.importAudioClip("...")).toThrow(msg);
             });
         });
 

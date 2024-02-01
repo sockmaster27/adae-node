@@ -122,7 +122,7 @@ export class Engine extends ExposedObject {
 
     /**
      * Closes down the engine gracefully.
-     * After this is called all other methods will throw an {@linkcode Error}.
+     * After this is called all other functions and methods (not just on {@linkcode Engine}) may throw an {@linkcode Error}.
      */
     close(): void;
 }

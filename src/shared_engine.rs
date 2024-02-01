@@ -37,20 +37,33 @@ impl SharedEngine {
             .or_else(|_| cx.throw_error("A panic has ocurred while holding a lock on the engine."))
     }
 
+    /// Call the given callback with a mutable reference to the engine.
+    ///
+    /// # Errors
+    /// Throws an error if the engine has been closed.
     pub fn with_inner<'a, C, R, F>(&self, cx: &mut C, callback: F) -> Result<R, Throw>
     where
         C: Context<'a>,
         F: FnOnce(&mut C, &mut adae::Engine) -> Result<R, Throw>,
     {
+        self.assert_not_closed(cx)?;
+
         let mut option_guard = self.lock(cx)?;
-        let engine = match *option_guard {
-            Some(ref mut engine) => engine,
-            None => {
-                return cx.throw_error("Engine has already been closed.");
-            }
-        };
+        let engine = option_guard.as_mut().unwrap();
 
         callback(cx, engine)
+    }
+
+    /// Throws an error if the engine has been closed.
+    pub fn assert_not_closed<'a, C>(&self, cx: &mut C) -> Result<(), Throw>
+    where
+        C: Context<'a>,
+    {
+        let option_guard = self.lock(cx)?;
+        match *option_guard {
+            Some(_) => Ok(()),
+            None => cx.throw_error("Engine has already been closed."),
+        }
     }
 
     pub fn close(&self) {
