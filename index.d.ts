@@ -121,11 +121,6 @@ export class Engine extends ExposedObject {
     importAudioClip(path: string): StoredAudioClip;
 
     /**
-     * Move clip to another track.
-     */
-    moveAudioClipToTrack(clip: AudioClip, newTrack: AudioTrack): void;
-
-    /**
      * Closes down the engine gracefully.
      * After this is called all other methods will throw an {@linkcode Error}.
      */
@@ -305,6 +300,11 @@ export abstract class Clip extends ExposedObject {
      * Set the start position of the clip.
      */
     move(newStart: Timestamp): void;
+
+    /**
+     * Move clip to the given position on another track.
+     */
+    moveToTrack(newStart: Timestamp, newTrack: AudioTrack): void;
 
     /**
      * Set the length of the clip, keeping the end position fixed.

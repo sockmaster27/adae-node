@@ -455,6 +455,29 @@ describe("Engine", () => {
             expect(clip.getStart().getBeats()).toBe(2);
         });
 
+        test("moveToTrack()", () => {
+            const track2 = engine.addAudioTrack();
+
+            clip.moveToTrack(Timestamp.fromBeats(2), track2);
+
+            expect(track.getClips().length).toBe(0);
+            expect(track2.getClips().length).toBe(1);
+            expect(clip.getStart().getBeats()).toBe(2);
+        });
+
+        test("moveToTrack() overlap", () => {
+            const track2 = engine.addAudioTrack();
+            track2.addClip(
+                importTestClip(),
+                Timestamp.fromBeats(3),
+                Timestamp.fromBeats(1),
+            );
+
+            expect(() =>
+                clip.moveToTrack(Timestamp.fromBeats(2), track2),
+            ).toThrow();
+        });
+
         test("cropStart()", () => {
             clip.cropStart(Timestamp.fromBeats(1));
             expect(clip.getStart().getBeats()).toBe(2);
@@ -482,15 +505,6 @@ describe("Engine", () => {
             ];
 
             for (const method of methods) expect(clip[method]).toThrow();
-        });
-
-        test("Move clip to another track", () => {
-            const track2 = engine.addAudioTrack();
-
-            engine.moveAudioClipToTrack(clip, track2);
-
-            expect(track.getClips().length).toBe(0);
-            expect(track2.getClips().length).toBe(1);
         });
     });
 });

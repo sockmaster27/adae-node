@@ -10,6 +10,8 @@ use crate::timestamp;
 use std::ops::Deref;
 
 pub mod audio_clip {
+    use crate::track::audio_track;
+
     use super::*;
 
     pub fn construct<'a>(
@@ -114,6 +116,33 @@ pub mod audio_clip {
                         engine
                             .audio_clip_move(**clip_key, new_start)
                             .or_else(|e| cx.throw_error(format!("Failed to move clip: {e}")))?;
+                        Ok(cx.undefined().as_value(cx))
+                    })
+                },
+            )
+        }),
+        ("moveToTrack", |mut cx| {
+            let new_start_js = cx.argument::<JsObject>(0)?;
+            let new_start = timestamp(&mut cx, new_start_js)?;
+
+            let new_audio_track_js = cx.argument::<JsObject>(1)?;
+            let new_audio_track_key =
+                audio_track::unpack_audio_track_key(&mut cx, new_audio_track_js)?;
+
+            encapsulator::unpack_this(
+                &mut cx,
+                |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        let new_timeline_track_key = engine
+                            .audio_timeline_track_key(new_audio_track_key)
+                            .or_else(|e| {
+                                cx.throw_error(format!("Failed to get timeline track: {e}"))
+                            })?;
+
+                        engine
+                            .audio_clip_move_to_track(**clip_key, new_start, new_timeline_track_key)
+                            .or_else(|e| cx.throw_error(format!("Failed to move clip: {e}")))?;
+
                         Ok(cx.undefined().as_value(cx))
                     })
                 },

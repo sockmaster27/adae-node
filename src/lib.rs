@@ -12,7 +12,6 @@ mod track;
 
 use std::path::Path;
 
-use clip::audio_clip::AudioClipKeyWrapper;
 use neon::prelude::*;
 
 use custom_output::get_debug;
@@ -312,32 +311,6 @@ const METHODS: &[(&str, Method)] = &[
                 Ok(clip_js.as_value(cx))
             })
         })
-    }),
-    ("moveAudioClipToTrack", |mut cx| {
-        let clip_js: Handle<JsObject> = cx.argument(0)?;
-        let clip_key = unpack(
-            &mut cx,
-            clip_js,
-            |_, (_, clip_key): &(SharedEngine, AudioClipKeyWrapper)| Ok(**clip_key),
-        )?;
-
-        let track_js: Handle<JsObject> = cx.argument(1)?;
-        let new_audio_track_key = audio_track::unpack_audio_track_key(&mut cx, track_js)?;
-
-        unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
-            shared_engine.with_inner(cx, |cx, engine| {
-                let new_timeline_track_key = engine
-                    .audio_timeline_track_key(new_audio_track_key)
-                    .or_else(|e| cx.throw_error(format! {"{e}"}))?;
-                engine
-                    .audio_clip_move_to_track(clip_key, new_timeline_track_key)
-                    .or_else(|e| cx.throw_error(format! {"{e}"}))?;
-
-                Ok(())
-            })
-        })?;
-
-        Ok(cx.undefined().as_value(&mut cx))
     }),
     ("close", |mut cx| {
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
