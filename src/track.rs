@@ -75,15 +75,7 @@ pub mod audio_track {
         unpack(
             cx,
             obj,
-            |cx, (shared_engine, audio_track_key): &(SharedEngine, AudioTrackKeyWrapper)| {
-                shared_engine.with_inner(cx, |cx, engine| {
-                    if !engine.has_audio_track(**audio_track_key) {
-                        return cx.throw_error("Audio track has been deleted.");
-                    }
-
-                    Ok(**audio_track_key)
-                })
-            },
+            |_, (_, audio_track_key): &(SharedEngine, AudioTrackKeyWrapper)| Ok(**audio_track_key),
         )
     }
 
@@ -124,38 +116,62 @@ pub mod audio_track {
     {
         shared_engine.with_inner(cx, |cx, engine| {
             let state = engine.audio_track_state(audio_track_key).or_throw(cx)?;
-
             engine.delete_audio_track(audio_track_key).or_throw(cx)?;
 
             encapsulate(cx, AudioTrackStateWrapper(state), &[], &[])
         })
     }
 
+    /// Throws an error if the audio track represented by `cx.this()` has been deleted.
+    fn assert_this_not_deleted(cx: &mut MethodContext<JsObject>) -> NeonResult<()> {
+        unpack_this(
+            cx,
+            |cx, (shared_engine, audio_track_key): &(SharedEngine, AudioTrackKeyWrapper)| {
+                shared_engine.with_inner(cx, |cx, engine| {
+                    if !engine.has_audio_track(**audio_track_key) {
+                        return cx.throw_error("Audio track has been deleted.");
+                    }
+
+                    Ok(())
+                })
+            },
+        )
+    }
+
     const METHODS: &[(&str, Method)] = &[
         ("getKey", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
+
             let audio_track_key = unpack_this_audio_track_key(&mut cx)?;
             let key: u32 = audio_track_key.into();
             Ok(cx.number(key).as_value(&mut cx))
         }),
         ("getPanning", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
             unpack_this_mixer_track(&mut cx, get_panning)
         }),
         ("setPanning", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
             unpack_this_mixer_track(&mut cx, set_panning)
         }),
         ("getVolume", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
             unpack_this_mixer_track(&mut cx, get_volume)
         }),
         ("setVolume", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
             unpack_this_mixer_track(&mut cx, set_volume)
         }),
         ("readMeter", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
             unpack_this_mixer_track(&mut cx, read_meter)
         }),
         ("snapMeter", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
             unpack_this_mixer_track(&mut cx, snap_meter)
         }),
         ("getClips", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
             unpack_this(
                 &mut cx,
                 |cx, (shared_engine, audio_track_key): &(SharedEngine, AudioTrackKeyWrapper)| {
@@ -178,6 +194,8 @@ pub mod audio_track {
             )
         }),
         ("addClip", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
+
             let audio_clip_js = cx.argument::<JsObject>(0)?;
             let audio_clip_key = unpack(
                 &mut cx,
@@ -225,6 +243,8 @@ pub mod audio_track {
             )
         }),
         ("deleteClip", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
+
             let clip_js = cx.argument::<JsObject>(0)?;
             let state = audio_clip::state_of(&mut cx, clip_js)?;
             unpack(
@@ -241,6 +261,8 @@ pub mod audio_track {
         }),
         // TODO: Move to Engine (?)
         ("deleteClips", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
+
             let clips_js_array = cx.argument::<JsArray>(0)?;
             let clips_js = clips_js_array.to_vec(&mut cx)?;
             let clip_keys = clips_js
@@ -273,6 +295,8 @@ pub mod audio_track {
             )
         }),
         ("reconstructClip", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
+
             let state_js = cx.argument::<JsObject>(0)?;
             let state = audio_clip::unpack_state(&mut cx, state_js)?;
 
@@ -294,6 +318,8 @@ pub mod audio_track {
             )
         }),
         ("reconstructClips", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
+
             let states_js_array = cx.argument::<JsArray>(0)?;
             let states_js = states_js_array.to_vec(&mut cx)?;
             let states = states_js
@@ -332,6 +358,7 @@ pub mod audio_track {
             )
         }),
         ("delete", |mut cx| {
+            assert_this_not_deleted(&mut cx)?;
             unpack_this(
                 &mut cx,
                 |cx, data: &(SharedEngine, AudioTrackKeyWrapper)| {

@@ -328,36 +328,41 @@ describe("Engine", () => {
                 });
 
                 test("delete() deletes track", () => {
+                    const key = track.getKey();
                     track.delete();
                     expect(
-                        engine
-                            .getAudioTracks()
-                            .some(t => t.getKey() === track.getKey()),
+                        engine.getAudioTracks().some(t => t.getKey() === key),
                     ).toBe(false);
                 });
 
                 test("All methods throw when track is deleted", () => {
+                    const storedClip = importTestClip();
+                    const clip = track.addClip(storedClip, Timestamp.zero());
+                    const clipState = track.deleteClip(
+                        track.addClip(storedClip, Timestamp.fromBeats(100)),
+                    );
+
                     track.delete();
-                    const methods = [
-                        "getPanning",
-                        "setPanning",
-                        "getVolume",
-                        "setVolume",
-                        "readMeter",
-                        "snapMeter",
 
-                        "getKey",
-                        "getClips",
-                        "addClip",
-                        "deleteClip",
-                        "deleteClips",
-                        "reconstructClip",
-                        "reconstructClips",
-                        "delete",
-                    ];
+                    const msg = "Audio track has been deleted.";
 
-                    for (const method of methods)
-                        expect(track[method]).toThrow();
+                    expect(() => track.getPanning()).toThrow(msg);
+                    expect(() => track.setPanning(0)).toThrow(msg);
+                    expect(() => track.getVolume()).toThrow(msg);
+                    expect(() => track.setVolume(0)).toThrow(msg);
+                    expect(() => track.readMeter()).toThrow(msg);
+                    expect(() => track.snapMeter()).toThrow(msg);
+
+                    expect(() => track.getKey()).toThrow(msg);
+                    expect(() => track.getClips()).toThrow(msg);
+                    expect(() =>
+                        track.addClip(storedClip, Timestamp.zero()),
+                    ).toThrow(msg);
+                    expect(() => track.deleteClip(clip)).toThrow(msg);
+                    expect(() => track.deleteClips([])).toThrow(msg);
+                    expect(() => track.reconstructClip(clipState)).toThrow(msg);
+                    expect(() => track.reconstructClips([])).toThrow(msg);
+                    expect(() => track.delete()).toThrow(msg);
                 });
             });
 
