@@ -9,6 +9,7 @@ mod shared_engine;
 mod stored_clip;
 mod timestamp;
 mod track;
+mod utils;
 
 use std::path::Path;
 
@@ -26,6 +27,7 @@ use track::{
     audio_track::{self, AudioTrackStateWrapper},
     master,
 };
+use utils::ResultExt;
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
@@ -61,8 +63,7 @@ fn constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
         Some(config_js) => {
             let config_obj: Handle<JsObject> = config_js.downcast_or_throw(&mut cx)?;
             config::config_class::unpack(&mut cx, config_obj, |cx, config| {
-                let (engine, import_errors) = SharedEngine::new(config.clone())
-                    .or_else(|e| cx.throw_error(format!("{e}")))?;
+                let (engine, import_errors) = SharedEngine::new(config.clone()).or_throw(cx)?;
 
                 let import_errors_vec: Vec<adae::error::ImportError> = import_errors.collect();
                 debug_assert!(
@@ -100,9 +101,7 @@ const METHODS: &[(&str, Method)] = &[
         config::config_class::unpack(&mut cx, config_js, |cx, config| {
             unpack_this(cx, |cx, shared_engine: &SharedEngine| {
                 shared_engine.with_inner(cx, |cx, engine| {
-                    engine
-                        .set_config(config.clone())
-                        .or_else(|e| cx.throw_error(format!("{e}")))?;
+                    engine.set_config(config.clone()).or_throw(cx)?;
                     Ok(cx.undefined().as_value(cx))
                 })
             })
@@ -170,9 +169,7 @@ const METHODS: &[(&str, Method)] = &[
     ("addAudioTrack", |mut cx| {
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
-                let audio_track = engine
-                    .add_audio_track()
-                    .or_else(|e| cx.throw_error(format!("{e}")))?;
+                let audio_track = engine.add_audio_track().or_throw(cx)?;
 
                 let js_track =
                     audio_track::construct(cx, audio_track, SharedEngine::clone(shared_engine))?;
@@ -187,9 +184,7 @@ const METHODS: &[(&str, Method)] = &[
 
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
-                let tracks = engine
-                    .add_audio_tracks(count)
-                    .or_else(|e| cx.throw_error(format!("{e}")))?;
+                let tracks = engine.add_audio_tracks(count).or_throw(cx)?;
 
                 let new_tracks = cx.empty_array();
                 for (i, audio_track_key) in tracks.enumerate() {

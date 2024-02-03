@@ -10,7 +10,7 @@ use crate::timestamp;
 use std::ops::Deref;
 
 pub mod audio_clip {
-    use crate::track::audio_track;
+    use crate::{track::audio_track, utils::ResultExt};
 
     use super::*;
 
@@ -34,9 +34,7 @@ pub mod audio_clip {
             cx,
             |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                 shared_engine.with_inner(cx, |cx, engine| {
-                    let clip = engine
-                        .audio_clip(**clip_key)
-                        .or_else(|e| cx.throw_error(format!("{e}")))?;
+                    let clip = engine.audio_clip(**clip_key).or_throw(cx)?;
                     callback(cx, clip)
                 })
             },
@@ -52,10 +50,7 @@ pub mod audio_clip {
             clip_obj,
             |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                 shared_engine.with_inner(cx, |cx, engine| {
-                    let state = engine
-                        .audio_clip(**clip_key)
-                        .or_else(|e| cx.throw_error(format!("{e}")))?
-                        .state();
+                    let state = engine.audio_clip(**clip_key).or_throw(cx)?.state();
 
                     let state_js = encapsulate(cx, AudioClipStateWrapper(state), &[], &[])?;
                     Ok(state_js)
@@ -97,9 +92,7 @@ pub mod audio_clip {
                     shared_engine.with_inner(cx, |cx, engine| {
                         let bpm_cents = engine.bpm_cents();
 
-                        let clip = engine
-                            .audio_clip(**clip_key)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                        let clip = engine.audio_clip(**clip_key).or_throw(cx)?;
                         timestamp::construct(cx, clip.length(bpm_cents))
                     })
                 },
@@ -189,9 +182,7 @@ pub mod audio_clip {
                 &mut cx,
                 |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
-                        let clip = engine
-                            .audio_clip(**clip_key)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                        let clip = engine.audio_clip(**clip_key).or_throw(cx)?;
 
                         Ok(stored_audio_clip::construct(
                             cx,
@@ -211,9 +202,7 @@ pub mod audio_clip {
                     let state = state_of(cx, this)?;
 
                     shared_engine.with_inner(cx, |cx, engine| {
-                        engine
-                            .delete_audio_clip(**clip_key)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                        engine.delete_audio_clip(**clip_key).or_throw(cx)?;
                         Ok(state.as_value(cx))
                     })
                 },

@@ -3,6 +3,7 @@ use std::ops::Deref;
 
 use crate::clip::audio_clip::AudioClipKeyWrapper;
 use crate::stored_clip::stored_audio_clip::StoredAudioClipKeyWrapper;
+use crate::utils::ResultExt;
 use crate::{clip::audio_clip, encapsulator::unpack, timestamp::timestamp};
 use crate::{
     encapsulator::{encapsulate, unpack_this, Method},
@@ -71,32 +72,26 @@ pub mod audio_track {
     where
         C: Context<'a>,
     {
-        let audio_track_key = unpack(
+        unpack(
             cx,
             obj,
-            |_cx, data: &(SharedEngine, AudioTrackKeyWrapper)| {
-                let (_, audio_track_key) = data;
-                Ok(**audio_track_key)
-            },
-        )?;
+            |cx, (shared_engine, audio_track_key): &(SharedEngine, AudioTrackKeyWrapper)| {
+                shared_engine.with_inner(cx, |cx, engine| {
+                    if !engine.has_audio_track(**audio_track_key) {
+                        return cx.throw_error("Audio track has been deleted.");
+                    }
 
-        Ok(audio_track_key)
+                    Ok(**audio_track_key)
+                })
+            },
+        )
     }
 
-    fn unpack_this_audio_track_key<'a, F, R>(
-        cx: &mut CallContext<'a, JsObject>,
-        callback: F,
-    ) -> NeonResult<R>
-    where
-        F: FnOnce(&mut CallContext<'a, JsObject>, &mut adae::AudioTrackKey) -> NeonResult<R>,
-    {
-        let mut audio_track_key =
-            unpack_this(cx, |_cx, data: &(SharedEngine, AudioTrackKeyWrapper)| {
-                let (_, audio_track_key) = data;
-                Ok(**audio_track_key)
-            })?;
-
-        callback(cx, &mut audio_track_key)
+    fn unpack_this_audio_track_key(
+        cx: &mut CallContext<'_, JsObject>,
+    ) -> NeonResult<adae::AudioTrackKey> {
+        let this = cx.this();
+        unpack_audio_track_key(cx, this)
     }
 
     fn unpack_this_mixer_track<'a, F, R>(
@@ -112,10 +107,8 @@ pub mod audio_track {
             shared_engine.with_inner(cx, |cx, engine| {
                 let mixer_track_key = engine
                     .audio_mixer_track_key(**audio_track_key)
-                    .or_else(|e| cx.throw_error(format!("{e}")))?;
-                let track = engine
-                    .mixer_track_mut(mixer_track_key)
-                    .or_else(|e| cx.throw_error(format!("{e}")))?;
+                    .or_throw(cx)?;
+                let track = engine.mixer_track_mut(mixer_track_key).or_throw(cx)?;
                 callback(cx, track)
             })
         })
@@ -130,13 +123,9 @@ pub mod audio_track {
         C: Context<'a>,
     {
         shared_engine.with_inner(cx, |cx, engine| {
-            let state = engine
-                .audio_track_state(audio_track_key)
-                .or_else(|e| cx.throw_error(format!("{e}")))?;
+            let state = engine.audio_track_state(audio_track_key).or_throw(cx)?;
 
-            engine
-                .delete_audio_track(audio_track_key)
-                .or_else(|e| cx.throw_error(format!("{e}")))?;
+            engine.delete_audio_track(audio_track_key).or_throw(cx)?;
 
             encapsulate(cx, AudioTrackStateWrapper(state), &[], &[])
         })
@@ -144,10 +133,9 @@ pub mod audio_track {
 
     const METHODS: &[(&str, Method)] = &[
         ("getKey", |mut cx| {
-            unpack_this_audio_track_key(&mut cx, |cx, audio_track_key| {
-                let key: u32 = (*audio_track_key).into();
-                Ok(cx.number(key).as_value(cx))
-            })
+            let audio_track_key = unpack_this_audio_track_key(&mut cx)?;
+            let key: u32 = audio_track_key.into();
+            Ok(cx.number(key).as_value(&mut cx))
         }),
         ("getPanning", |mut cx| {
             unpack_this_mixer_track(&mut cx, get_panning)
@@ -174,10 +162,8 @@ pub mod audio_track {
                     shared_engine.with_inner(cx, |cx, engine| {
                         let timeline_track_key = engine
                             .audio_timeline_track_key(**audio_track_key)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
-                        let clips = engine
-                            .audio_clips(timeline_track_key)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                            .or_throw(cx)?;
+                        let clips = engine.audio_clips(timeline_track_key).or_throw(cx)?;
 
                         let clips_js = JsArray::new(cx, clips.size_hint().0 as u32);
                         for (i, clip) in clips.enumerate() {
@@ -228,10 +214,10 @@ pub mod audio_track {
                     shared_engine.with_inner(cx, |cx, engine| {
                         let timeline_track_key = engine
                             .audio_timeline_track_key(**audio_track_key)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                            .or_throw(cx)?;
                         let key = engine
                             .add_audio_clip(timeline_track_key, audio_clip_key, start, length)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                            .or_throw(cx)?;
 
                         Ok(audio_clip::construct(cx, key, shared_engine.clone())?.as_value(cx))
                     })
@@ -246,9 +232,7 @@ pub mod audio_track {
                 clip_js,
                 |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
-                        engine
-                            .delete_audio_clip(**clip_key)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                        engine.delete_audio_clip(**clip_key).or_throw(cx)?;
 
                         Ok(state.as_value(cx))
                     })
@@ -282,9 +266,7 @@ pub mod audio_track {
                 &mut cx,
                 |cx, (shared_engine, _): &(SharedEngine, AudioTrackKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
-                        engine
-                            .delete_audio_clips(clip_keys)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                        engine.delete_audio_clips(clip_keys).or_throw(cx)?;
                         Ok(clip_states_js_array.as_value(cx))
                     })
                 },
@@ -300,10 +282,10 @@ pub mod audio_track {
                     shared_engine.with_inner(cx, |cx, engine| {
                         let timeline_track_key = engine
                             .audio_timeline_track_key(**audio_track_key)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                            .or_throw(cx)?;
                         let clip_key = engine
                             .reconstruct_audio_clip(timeline_track_key, state)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                            .or_throw(cx)?;
 
                         let clip_js = audio_clip::construct(cx, clip_key, shared_engine.clone())?;
                         Ok(clip_js.as_value(cx))
@@ -328,11 +310,11 @@ pub mod audio_track {
                     shared_engine.with_inner(cx, |cx, engine| {
                         let timeline_track_key = engine
                             .audio_timeline_track_key(**audio_track_key)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                            .or_throw(cx)?;
 
                         let clip_keys = engine
                             .reconstruct_audio_clips(timeline_track_key, states)
-                            .or_else(|e| cx.throw_error(format!("{e}")))?;
+                            .or_throw(cx)?;
 
                         let (lower_size_hint, upper_size_hint) = clip_keys.size_hint();
                         let size_hint = upper_size_hint.unwrap_or(lower_size_hint);
