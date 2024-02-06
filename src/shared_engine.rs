@@ -82,7 +82,7 @@ impl Clone for SharedEngine {
 }
 impl Debug for SharedEngine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SharedEngine").finish()
+        f.debug_struct("SharedEngine").finish_non_exhaustive()
     }
 }
 impl Finalize for SharedEngine {}
