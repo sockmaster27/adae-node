@@ -244,15 +244,15 @@ pub mod audio_track {
             assert_this_not_deleted(&mut cx)?;
 
             let clip_js = cx.argument::<JsObject>(0)?;
-            let state = audio_clip::state_of(&mut cx, clip_js)?;
+
             unpack(
                 &mut cx,
                 clip_js,
                 |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
-                        engine.delete_audio_clip(**clip_key).or_throw(cx)?;
-
-                        Ok(state.as_value(cx))
+                        let state = engine.delete_audio_clip(**clip_key).or_throw(cx)?;
+                        let state_js = audio_clip::encapsulate_state(cx, state)?;
+                        Ok(state_js.as_value(cx))
                     })
                 },
             )
@@ -275,18 +275,18 @@ pub mod audio_track {
                 })
                 .collect::<NeonResult<Vec<_>>>()?;
 
-            let clip_states_js_array = JsArray::new(&mut cx, clips_js.len() as u32);
-            for (i, clip_js) in clips_js.iter().enumerate() {
-                let clip_obj = clip_js.downcast_or_throw::<JsObject, _>(&mut cx)?;
-                let clip_state_js = audio_clip::state_of(&mut cx, clip_obj)?;
-                clip_states_js_array.set(&mut cx, i as u32, clip_state_js)?;
-            }
-
             unpack_this(
                 &mut cx,
                 |cx, (shared_engine, _): &(SharedEngine, AudioTrackKeyWrapper)| {
                     shared_engine.with_inner(cx, |cx, engine| {
-                        engine.delete_audio_clips(clip_keys).or_throw(cx)?;
+                        let clip_states = engine.delete_audio_clips(clip_keys).or_throw(cx)?;
+
+                        let clip_states_js_array = JsArray::new(cx, clips_js.len() as u32);
+                        for (i, clip_state) in clip_states.enumerate() {
+                            let clip_state_js = audio_clip::encapsulate_state(cx, clip_state)?;
+                            clip_states_js_array.set(cx, i as u32, clip_state_js)?;
+                        }
+
                         Ok(clip_states_js_array.as_value(cx))
                     })
                 },

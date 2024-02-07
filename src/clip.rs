@@ -41,22 +41,15 @@ pub mod audio_clip {
         )
     }
 
-    pub fn state_of<'a, C>(cx: &mut C, clip_obj: Handle<'a, JsObject>) -> JsResult<'a, JsObject>
+    pub fn encapsulate_state<'a, C>(
+        cx: &mut C,
+        state: adae::AudioClipState,
+    ) -> JsResult<'a, JsObject>
     where
         C: Context<'a>,
     {
-        encapsulator::unpack(
-            cx,
-            clip_obj,
-            |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
-                shared_engine.with_inner(cx, |cx, engine| {
-                    let state = engine.audio_clip(**clip_key).or_throw(cx)?.state();
-
-                    let state_js = encapsulate(cx, AudioClipStateWrapper(state), &[], &[])?;
-                    Ok(state_js)
-                })
-            },
-        )
+        let state_js = encapsulate(cx, AudioClipStateWrapper(state), &[], &[])?;
+        Ok(state_js)
     }
 
     pub fn unpack_state<'a, C>(
@@ -198,12 +191,10 @@ pub mod audio_clip {
             encapsulator::unpack_this(
                 &mut cx,
                 |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
-                    let this = cx.this();
-                    let state = state_of(cx, this)?;
-
                     shared_engine.with_inner(cx, |cx, engine| {
-                        engine.delete_audio_clip(**clip_key).or_throw(cx)?;
-                        Ok(state.as_value(cx))
+                        let state = engine.delete_audio_clip(**clip_key).or_throw(cx)?;
+                        let state_js = encapsulate_state(cx, state)?;
+                        Ok(state_js.as_value(cx))
                     })
                 },
             )
