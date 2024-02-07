@@ -115,9 +115,7 @@ pub mod audio_track {
         C: Context<'a>,
     {
         shared_engine.with_inner(cx, |cx, engine| {
-            let state = engine.audio_track_state(audio_track_key).or_throw(cx)?;
-            engine.delete_audio_track(audio_track_key).or_throw(cx)?;
-
+            let state = engine.delete_audio_track(audio_track_key).or_throw(cx)?;
             encapsulate(cx, AudioTrackStateWrapper(state), &[], &[])
         })
     }
