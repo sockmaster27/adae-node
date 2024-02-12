@@ -304,7 +304,7 @@ export abstract class Clip extends ExposedObject {
     /**
      * Move clip to the given position on another track.
      */
-    moveToTrack(newStart: Timestamp, newTrack: AudioTrack): void;
+    moveToTrack(newStart: Timestamp, newTrack: Track): void;
 
     /**
      * Set the length of the clip, keeping the end position fixed.
@@ -340,6 +340,11 @@ export abstract class Clip extends ExposedObject {
 export class AudioClip extends Clip {
     #type: "AudioClip";
     private constructor();
+
+    /**
+     * Move clip to the given position on another track.
+     */
+    moveToTrack(newStart: Timestamp, newTrack: AudioTrack): void;
 
     /**
      * Get the clip in the store that this clip references.
