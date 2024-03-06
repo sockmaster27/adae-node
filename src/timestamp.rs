@@ -27,10 +27,7 @@ where
     Ok(encapsulate(cx, TimestampWrapper(timestamp), &[], METHODS)?.as_value(cx))
 }
 
-pub fn timestamp(
-    cx: &mut MethodContext<'_, JsObject>,
-    obj: Handle<JsObject>,
-) -> NeonResult<Timestamp> {
+pub fn timestamp(cx: &mut FunctionContext<'_>, obj: Handle<JsObject>) -> NeonResult<Timestamp> {
     let boxed: Handle<JsBox<TimestampWrapper>> = obj.get(cx, encapsulator::DATA_KEY)?;
     let wrapper = &*boxed;
     Ok(wrapper.0)
@@ -211,19 +208,19 @@ const STATIC_METHODS: &[(&str, Method)] = &[
 
 const METHODS: &[(&str, Method)] = &[
     ("getBeatUnits", |mut cx| {
-        let this = cx.this();
+        let this = cx.this()?;
         let timestamp = timestamp(&mut cx, this)?;
         let beat_units = timestamp.beat_units();
         Ok(cx.number(beat_units as f64).as_value(&mut cx))
     }),
     ("getBeats", |mut cx| {
-        let this = cx.this();
+        let this = cx.this()?;
         let timestamp = timestamp(&mut cx, this)?;
         let beat_units = timestamp.beats();
         Ok(cx.number(beat_units as f64).as_value(&mut cx))
     }),
     ("getSamples", |mut cx| {
-        let this = cx.this();
+        let this = cx.this()?;
 
         let sample_rate_js: Handle<JsNumber> = cx.argument(0)?;
         let sample_rate_f64 = sample_rate_js.value(&mut cx);

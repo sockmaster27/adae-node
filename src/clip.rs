@@ -23,12 +23,9 @@ pub mod audio_clip {
         Ok(object)
     }
 
-    fn unpack_this_clip<'a, R, F>(
-        cx: &mut MethodContext<'a, JsObject>,
-        callback: F,
-    ) -> NeonResult<R>
+    fn unpack_this_clip<'a, R, F>(cx: &mut FunctionContext<'a>, callback: F) -> NeonResult<R>
     where
-        F: FnOnce(&mut MethodContext<'a, JsObject>, &adae::AudioClip) -> NeonResult<R>,
+        F: FnOnce(&mut FunctionContext<'a>, &adae::AudioClip) -> NeonResult<R>,
     {
         encapsulator::unpack_this(
             cx,

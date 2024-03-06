@@ -67,9 +67,9 @@ pub mod config_class {
         })
     }
 
-    pub fn unpack_this<'a, F, R>(cx: &mut MethodContext<'a, JsObject>, callback: F) -> NeonResult<R>
+    pub fn unpack_this<'a, F, R>(cx: &mut FunctionContext<'a>, callback: F) -> NeonResult<R>
     where
-        F: FnOnce(&mut MethodContext<'a, JsObject>, &adae::config::Config) -> Result<R, Throw>,
+        F: FnOnce(&mut FunctionContext<'a>, &adae::config::Config) -> Result<R, Throw>,
     {
         encapsulator::unpack_this(cx, |cx, config: &ConfigWrapper| callback(cx, &config.0))
     }
@@ -203,12 +203,9 @@ mod output_config_range {
         )
     }
 
-    pub fn unpack_this<'a, F, R>(cx: &mut MethodContext<'a, JsObject>, callback: F) -> NeonResult<R>
+    pub fn unpack_this<'a, F, R>(cx: &mut FunctionContext<'a>, callback: F) -> NeonResult<R>
     where
-        F: FnOnce(
-            &mut MethodContext<'a, JsObject>,
-            &adae::config::OutputConfigRange,
-        ) -> Result<R, Throw>,
+        F: FnOnce(&mut FunctionContext<'a>, &adae::config::OutputConfigRange) -> Result<R, Throw>,
     {
         encapsulator::unpack_this(cx, |cx, range: &OutputConfigRangeWrapper| {
             callback(cx, &range.0)
@@ -387,9 +384,9 @@ mod host {
         Ok(encapsulate(cx, HostWrapper(host), &[], METHODS)?.as_value(cx))
     }
 
-    fn unpack_this<'a, F, R>(cx: &mut MethodContext<'a, JsObject>, callback: F) -> NeonResult<R>
+    fn unpack_this<'a, F, R>(cx: &mut FunctionContext<'a>, callback: F) -> NeonResult<R>
     where
-        F: FnOnce(&mut MethodContext<'a, JsObject>, &adae::config::Host) -> Result<R, Throw>,
+        F: FnOnce(&mut FunctionContext<'a>, &adae::config::Host) -> Result<R, Throw>,
     {
         encapsulator::unpack_this(cx, |cx, host: &HostWrapper| callback(cx, &host.0))
     }
@@ -468,12 +465,9 @@ mod output_device {
         })
     }
 
-    pub fn unpack_this<'a, F, R>(cx: &mut MethodContext<'a, JsObject>, callback: F) -> NeonResult<R>
+    pub fn unpack_this<'a, F, R>(cx: &mut FunctionContext<'a>, callback: F) -> NeonResult<R>
     where
-        F: FnOnce(
-            &mut MethodContext<'a, JsObject>,
-            &adae::config::OutputDevice,
-        ) -> Result<R, Throw>,
+        F: FnOnce(&mut FunctionContext<'a>, &adae::config::OutputDevice) -> Result<R, Throw>,
     {
         encapsulator::unpack_this(cx, |cx, device: &OutputDeviceWrapper| {
             callback(cx, &device.0)

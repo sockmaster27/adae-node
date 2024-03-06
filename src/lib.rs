@@ -224,13 +224,11 @@ const METHODS: &[(&str, Method)] = &[
 
         unpack_this(&mut cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| {
-                let states = engine.delete_audio_tracks(audio_track_keys.iter().copied()).or_throw(cx)?;
+                let states = engine
+                    .delete_audio_tracks(audio_track_keys.iter().copied())
+                    .or_throw(cx)?;
 
-                let length = audio_track_keys
-                    .len()
-                    .try_into()
-                    .or_else(|_| cx.throw_error("Too many tracks to fit into array"))?;
-                let state_array = JsArray::new(cx, length);
+                let state_array = JsArray::new(cx, audio_track_keys.len());
 
                 for (i, state) in states.enumerate() {
                     let state_js = encapsulate(cx, AudioTrackStateWrapper(state), &[], &[])?;

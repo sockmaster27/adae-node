@@ -7,7 +7,7 @@ pub const DATA_KEY: &str = "data";
 /// Property name of the [`Root`] on the JS-object having gone through [`prevent_gc`].
 const ROOT_KEY: &str = "root";
 
-pub type Method = fn(MethodContext<JsObject>) -> JsResult<JsValue>;
+pub type Method = fn(FunctionContext) -> JsResult<JsValue>;
 
 /// Encapsulate the `data` in a JavaScript object, with the given properties and methods exposed.
 ///
@@ -54,12 +54,13 @@ pub fn prevent_gc(cx: &mut FunctionContext, object: Handle<JsObject>) -> NeonRes
 /// If the data is not of this type, a JavaScript exception is thrown.
 //
 // Would ideally return the data, but that doesn't appear to be possibly due to the nesting of references.
-pub fn unpack_this<'a, D, R, F>(cx: &mut MethodContext<'a, JsObject>, callback: F) -> NeonResult<R>
+pub fn unpack_this<'a, D, R, F>(cx: &mut FunctionContext<'a>, callback: F) -> NeonResult<R>
 where
     D: 'static + Finalize + Send,
-    F: FnOnce(&mut MethodContext<'a, JsObject>, &D) -> NeonResult<R>,
+    F: FnOnce(&mut FunctionContext<'a>, &D) -> NeonResult<R>,
 {
-    let boxed: Handle<JsBox<D>> = cx.this().get(cx, DATA_KEY)?;
+    let this: Handle<JsObject> = cx.this()?;
+    let boxed: Handle<JsBox<D>> = this.get(cx, DATA_KEY)?;
     let data = &**boxed;
 
     callback(cx, data)

@@ -27,12 +27,9 @@ pub mod stored_audio_clip {
         Ok(object)
     }
 
-    fn unpack_this_stored_clip<'a, F, R>(
-        cx: &mut CallContext<'a, JsObject>,
-        callback: F,
-    ) -> NeonResult<R>
+    fn unpack_this_stored_clip<'a, F, R>(cx: &mut FunctionContext<'a>, callback: F) -> NeonResult<R>
     where
-        F: FnOnce(&mut CallContext<'a, JsObject>, Arc<adae::StoredAudioClip>) -> NeonResult<R>,
+        F: FnOnce(&mut FunctionContext<'a>, Arc<adae::StoredAudioClip>) -> NeonResult<R>,
     {
         unpack_this(
             cx,

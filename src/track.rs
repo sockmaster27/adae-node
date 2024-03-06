@@ -23,9 +23,9 @@ pub mod master {
     }
 
     /// Fetch the master track from the engine.
-    fn unpack_this_track<'a, F, R>(cx: &mut CallContext<'a, JsObject>, callback: F) -> NeonResult<R>
+    fn unpack_this_track<'a, F, R>(cx: &mut FunctionContext<'a>, callback: F) -> NeonResult<R>
     where
-        F: FnOnce(&mut CallContext<'a, JsObject>, &mut adae::MixerTrack) -> NeonResult<R>,
+        F: FnOnce(&mut FunctionContext<'a>, &mut adae::MixerTrack) -> NeonResult<R>,
     {
         unpack_this(cx, |cx, shared_engine: &SharedEngine| {
             shared_engine.with_inner(cx, |cx, engine| callback(cx, engine.master_mut()))
@@ -80,18 +80,15 @@ pub mod audio_track {
     }
 
     fn unpack_this_audio_track_key(
-        cx: &mut CallContext<'_, JsObject>,
+        cx: &mut FunctionContext<'_>,
     ) -> NeonResult<adae::AudioTrackKey> {
-        let this = cx.this();
+        let this = cx.this()?;
         unpack_audio_track_key(cx, this)
     }
 
-    fn unpack_this_mixer_track<'a, F, R>(
-        cx: &mut CallContext<'a, JsObject>,
-        callback: F,
-    ) -> NeonResult<R>
+    fn unpack_this_mixer_track<'a, F, R>(cx: &mut FunctionContext<'a>, callback: F) -> NeonResult<R>
     where
-        F: FnOnce(&mut CallContext<'a, JsObject>, &mut adae::MixerTrack) -> NeonResult<R>,
+        F: FnOnce(&mut FunctionContext<'a>, &mut adae::MixerTrack) -> NeonResult<R>,
     {
         unpack_this(cx, |cx, data: &(SharedEngine, AudioTrackKeyWrapper)| {
             let (shared_engine, audio_track_key) = data;
@@ -121,7 +118,7 @@ pub mod audio_track {
     }
 
     /// Throws an error if the audio track represented by `cx.this()` has been deleted.
-    fn assert_this_not_deleted(cx: &mut MethodContext<JsObject>) -> NeonResult<()> {
+    fn assert_this_not_deleted(cx: &mut FunctionContext) -> NeonResult<()> {
         unpack_this(
             cx,
             |cx, (shared_engine, audio_track_key): &(SharedEngine, AudioTrackKeyWrapper)| {
@@ -179,7 +176,7 @@ pub mod audio_track {
                             .or_throw(cx)?;
                         let clips = engine.audio_clips(timeline_track_key).or_throw(cx)?;
 
-                        let clips_js = JsArray::new(cx, clips.size_hint().0 as u32);
+                        let clips_js = JsArray::new(cx, clips.size_hint().0);
                         for (i, clip) in clips.enumerate() {
                             let clip_js =
                                 audio_clip::construct(cx, clip.key, shared_engine.clone())?;
@@ -281,7 +278,7 @@ pub mod audio_track {
                     shared_engine.with_inner(cx, |cx, engine| {
                         let clip_states = engine.delete_audio_clips(clip_keys).or_throw(cx)?;
 
-                        let clip_states_js_array = JsArray::new(cx, clips_js.len() as u32);
+                        let clip_states_js_array = JsArray::new(cx, clips_js.len());
                         for (i, clip_state) in clip_states.enumerate() {
                             let clip_state_js = audio_clip::encapsulate_state(cx, clip_state)?;
                             clip_states_js_array.set(cx, i as u32, clip_state_js)?;
@@ -343,7 +340,7 @@ pub mod audio_track {
                         let (lower_size_hint, upper_size_hint) = clip_keys.size_hint();
                         let size_hint = upper_size_hint.unwrap_or(lower_size_hint);
 
-                        let clips_js = JsArray::new(cx, size_hint as u32);
+                        let clips_js = JsArray::new(cx, size_hint);
                         for (i, clip_key) in clip_keys.enumerate() {
                             let clip_js =
                                 audio_clip::construct(cx, clip_key, shared_engine.clone())?;
@@ -392,7 +389,7 @@ pub mod audio_track {
 
 // Shared methods
 fn get_panning<'a>(
-    cx: &mut CallContext<'a, JsObject>,
+    cx: &mut FunctionContext<'a>,
     track: &mut adae::MixerTrack,
 ) -> JsResult<'a, JsValue> {
     let panning = track.panning();
@@ -400,7 +397,7 @@ fn get_panning<'a>(
     Ok(panning_js.as_value(cx))
 }
 fn set_panning<'a>(
-    cx: &mut CallContext<'a, JsObject>,
+    cx: &mut FunctionContext<'a>,
     track: &mut adae::MixerTrack,
 ) -> JsResult<'a, JsValue> {
     let value_js: Handle<JsNumber> = cx.argument(0)?;
@@ -410,7 +407,7 @@ fn set_panning<'a>(
     Ok(cx.undefined().as_value(cx))
 }
 fn get_volume<'a>(
-    cx: &mut CallContext<'a, JsObject>,
+    cx: &mut FunctionContext<'a>,
     track: &mut adae::MixerTrack,
 ) -> JsResult<'a, JsValue> {
     let volume = track.volume();
@@ -418,7 +415,7 @@ fn get_volume<'a>(
     Ok(volume_js.as_value(cx))
 }
 fn set_volume<'a>(
-    cx: &mut CallContext<'a, JsObject>,
+    cx: &mut FunctionContext<'a>,
     track: &mut adae::MixerTrack,
 ) -> JsResult<'a, JsValue> {
     let value_js: Handle<JsNumber> = cx.argument(0)?;
@@ -428,7 +425,7 @@ fn set_volume<'a>(
     Ok(cx.undefined().as_value(cx))
 }
 fn read_meter<'a>(
-    cx: &mut CallContext<'a, JsObject>,
+    cx: &mut FunctionContext<'a>,
     track: &mut adae::MixerTrack,
 ) -> JsResult<'a, JsValue> {
     let [peak, long_peak, rms] = track.read_meter();
@@ -451,7 +448,7 @@ fn read_meter<'a>(
     Ok(meter_js.as_value(cx))
 }
 fn snap_meter<'a>(
-    cx: &mut CallContext<'a, JsObject>,
+    cx: &mut FunctionContext<'a>,
     track: &mut adae::MixerTrack,
 ) -> JsResult<'a, JsValue> {
     track.snap_rms();

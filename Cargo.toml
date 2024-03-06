@@ -13,10 +13,7 @@ crate-type = ["cdylib"]
 [dependencies]
 adae = { git = "https://github.com/sockmaster27/adae.git" }
 
-[dependencies.neon]
-version = "0.10"
-default-features = false
-features = ["napi-latest", "promise-api", "channel-api"]
+neon = "1.0.0"
 
 [features]
 record_output = ["adae/record_output"]
