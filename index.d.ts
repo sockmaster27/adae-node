@@ -344,21 +344,28 @@ export class AudioClip extends Clip {
     /**
      * Move clip to the given position on another track.
      */
-    moveToTrack(newStart: Timestamp, newTrack: AudioTrack): void;
+    override moveToTrack(newStart: Timestamp, newTrack: AudioTrack): void;
 
     /**
      * Get the clip in the store that this clip references.
      */
-    getStoredClip(): StoredAudioClip;
+    override getStoredClip(): StoredAudioClip;
 
     /**
-     * Delte this clip from the track.
+     * Get the data needed to visualize the waveform of the clip.
+     *
+     * The data is layed out as an array of channels, where each channel is an array of [min, max] pairs, with the length of `chunks`.
+     */
+    getWaveform(chunks: number): Int16Array[][];
+
+    /**
+     * Delete this clip from the track.
      *
      * After this is done, calling any method on the clip will throw an {@linkcode Error}.
      *
      * This is an alias for {@linkcode AudioTrack.deleteClip()}.
      */
-    delete(): AudioClipState;
+    override delete(): AudioClipState;
 }
 
 export abstract class ClipState extends ExposedObject {}

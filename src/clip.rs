@@ -184,6 +184,27 @@ pub mod audio_clip {
                 },
             )
         }),
+        ("getWaveform", |mut cx| {
+            let chunks_js = cx.argument::<JsNumber>(0)?;
+            let chunks = chunks_js.value(&mut cx) as usize;
+
+            unpack_this_clip(&mut cx, |cx, audio_clip| {
+                let channels = audio_clip.waveform(chunks);
+
+                let channels_js = JsArray::new(cx, channels.len());
+                for (i, channel) in channels.iter().enumerate() {
+                    let channel_js = JsArray::new(cx, channel.len());
+                    for (j, (min, max)) in channel.iter().enumerate() {
+                        let v = JsInt16Array::from_slice(cx, &[*min, *max])?;
+                        channel_js.set(cx, j as u32, v)?;
+                    }
+
+                    channels_js.set(cx, i as u32, channel_js)?;
+                }
+
+                Ok(channels_js.as_value(cx))
+            })
+        }),
         ("delete", |mut cx| {
             encapsulator::unpack_this(
                 &mut cx,

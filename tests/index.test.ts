@@ -505,6 +505,19 @@ describe("Engine", () => {
             expect(clip.getStoredClip()).toBeDefined();
         });
 
+        test("getWaveform()", () => {
+            const r = clip.getWaveform(42);
+            expect(r.length).toBe(2);
+            expect(r[0].length).toBe(42);
+            expect(r[1].length).toBe(42);
+            for (const arr of [...r[0], ...r[1]]) {
+                expect(arr.length).toBe(2);
+
+                const [min, max] = [arr[0], arr[1]];
+                expect(min).toBeLessThanOrEqual(max);
+            }
+        });
+
         test("delete()", () => {
             expect(clip.delete()).toBeDefined();
             const methods = [
