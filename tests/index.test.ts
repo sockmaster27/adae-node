@@ -17,7 +17,7 @@ describe("Engine", () => {
         test("Default constructor", () => {
             // We do not actually call this constructor,
             // because it might fail if run on a machine without a sound card
-            expect(typeof Engine).toBe("function");
+            expect(typeof Engine).toStrictEqual("function");
         });
 
         test("Dummy constructor", () => {
@@ -30,7 +30,7 @@ describe("Engine", () => {
             throw e;
         });
     });
-    afterAll(async () => {
+    afterAll(() => {
         stopListeningForCrash();
     });
 
@@ -129,23 +129,27 @@ describe("Engine", () => {
             test("Add single track", () => {
                 const before = engine.getAudioTracks().length;
                 const newAudioTrack = engine.addAudioTrack();
-                expect(engine.getAudioTracks().length).toBe(before + 1);
+                expect(engine.getAudioTracks().length).toStrictEqual(
+                    before + 1,
+                );
                 expect(
                     containsEqualAudioTrack(
                         engine.getAudioTracks(),
                         newAudioTrack,
                     ),
-                ).toBe(true);
+                ).toStrictEqual(true);
             });
 
             test("Add number of tracks", () => {
                 const before = engine.getAudioTracks().length;
                 const newAudioTracks = engine.addAudioTracks(5);
-                expect(engine.getAudioTracks().length).toBe(before + 5);
+                expect(engine.getAudioTracks().length).toStrictEqual(
+                    before + 5,
+                );
                 for (const track of newAudioTracks)
                     expect(
                         containsEqualAudioTrack(engine.getAudioTracks(), track),
-                    ).toBe(true);
+                    ).toStrictEqual(true);
             });
 
             test("Delete track", () => {
@@ -153,10 +157,14 @@ describe("Engine", () => {
                 const newAudioTrack = engine.addAudioTrack();
                 engine.deleteAudioTrack(newAudioTrack);
 
-                expect(engine.getAudioTracks().length).toBe(before.length);
+                expect(engine.getAudioTracks().length).toStrictEqual(
+                    before.length,
+                );
 
                 for (const track of engine.getAudioTracks())
-                    expect(containsEqualAudioTrack(before, track)).toBe(true);
+                    expect(
+                        containsEqualAudioTrack(before, track),
+                    ).toStrictEqual(true);
             });
 
             test("Delete multiple tracks", () => {
@@ -164,10 +172,14 @@ describe("Engine", () => {
                 const newAudioTracks = engine.addAudioTracks(34);
                 engine.deleteAudioTracks(newAudioTracks);
 
-                expect(engine.getAudioTracks().length).toBe(before.length);
+                expect(engine.getAudioTracks().length).toStrictEqual(
+                    before.length,
+                );
 
                 for (const track of engine.getAudioTracks())
-                    expect(containsEqualAudioTrack(before, track)).toBe(true);
+                    expect(
+                        containsEqualAudioTrack(before, track),
+                    ).toStrictEqual(true);
             });
 
             test("Reconstruct single track", () => {
@@ -176,10 +188,14 @@ describe("Engine", () => {
                 const state = engine.deleteAudioTrack(newAudioTrack);
                 engine.reconstructAudioTrack(state);
 
-                expect(engine.getAudioTracks().length).toBe(before.length);
+                expect(engine.getAudioTracks().length).toStrictEqual(
+                    before.length,
+                );
 
                 for (const track of engine.getAudioTracks())
-                    expect(containsEqualAudioTrack(before, track)).toBe(true);
+                    expect(
+                        containsEqualAudioTrack(before, track),
+                    ).toStrictEqual(true);
             });
 
             test("Reconstruct multiple tracks", () => {
@@ -188,10 +204,14 @@ describe("Engine", () => {
                 const states = engine.deleteAudioTracks(newAudioTracks);
                 engine.reconstructAudioTracks(states);
 
-                expect(engine.getAudioTracks().length).toBe(before.length);
+                expect(engine.getAudioTracks().length).toStrictEqual(
+                    before.length,
+                );
 
                 for (const track of engine.getAudioTracks())
-                    expect(containsEqualAudioTrack(before, track)).toBe(true);
+                    expect(
+                        containsEqualAudioTrack(before, track),
+                    ).toStrictEqual(true);
             });
 
             test("Reconstruct track with clip", () => {
@@ -202,10 +222,14 @@ describe("Engine", () => {
                 const state = engine.deleteAudioTrack(newAudioTrack);
                 engine.reconstructAudioTrack(state);
 
-                expect(engine.getAudioTracks().length).toBe(before.length);
+                expect(engine.getAudioTracks().length).toStrictEqual(
+                    before.length,
+                );
 
                 for (const track of engine.getAudioTracks())
-                    expect(containsEqualAudioTrack(before, track)).toBe(true);
+                    expect(
+                        containsEqualAudioTrack(before, track),
+                    ).toStrictEqual(true);
             });
 
             test("All methods throw when engine is closed", () => {
@@ -247,7 +271,7 @@ describe("Engine", () => {
                 testTrackCommon(() => engine.addAudioTrack());
 
                 test("Has key", () => {
-                    expect(typeof track.getKey()).toBe("number");
+                    expect(typeof track.getKey()).toStrictEqual("number");
                 });
 
                 test("getClips()", () => {
@@ -257,11 +281,11 @@ describe("Engine", () => {
                 test("addClip()", () => {
                     const storedClip = importTestClip();
 
-                    expect(track.getClips().length).toBe(0);
+                    expect(track.getClips().length).toStrictEqual(0);
 
                     track.addClip(storedClip, Timestamp.zero());
 
-                    expect(track.getClips().length).toBe(1);
+                    expect(track.getClips().length).toStrictEqual(1);
                 });
 
                 test("deleteClip()", () => {
@@ -271,11 +295,11 @@ describe("Engine", () => {
                         Timestamp.zero(),
                     );
 
-                    expect(track.getClips().length).toBe(1);
+                    expect(track.getClips().length).toStrictEqual(1);
 
                     expect(track.deleteClip(timelineClip)).toBeDefined();
 
-                    expect(track.getClips().length).toBe(0);
+                    expect(track.getClips().length).toStrictEqual(0);
                 });
 
                 test("deleteClips()", () => {
@@ -301,7 +325,7 @@ describe("Engine", () => {
                     const state = track.deleteClip(clip1);
                     const clip2 = track.reconstructClip(state);
 
-                    expect(clip1.getKey()).toBe(clip2.getKey());
+                    expect(clip1.getKey()).toStrictEqual(clip2.getKey());
                 });
 
                 test("reconstructClips()", () => {
@@ -319,9 +343,11 @@ describe("Engine", () => {
                     const states = track.deleteClips(timelineClips1);
                     const timelineClips2 = track.reconstructClips(states);
 
-                    expect(timelineClips1.length).toBe(timelineClips2.length);
+                    expect(timelineClips1.length).toStrictEqual(
+                        timelineClips2.length,
+                    );
                     for (let i = 0; i < timelineClips1.length; i++) {
-                        expect(timelineClips1[i].getKey()).toBe(
+                        expect(timelineClips1[i].getKey()).toStrictEqual(
                             timelineClips2[i].getKey(),
                         );
                     }
@@ -332,7 +358,7 @@ describe("Engine", () => {
                     track.delete();
                     expect(
                         engine.getAudioTracks().some(t => t.getKey() === key),
-                    ).toBe(false);
+                    ).toStrictEqual(false);
                 });
 
                 test("All methods throw when track is deleted", () => {
@@ -373,18 +399,18 @@ describe("Engine", () => {
 
                 test("getPanning() returns what's passed to setPanning()", () => {
                     track.setPanning(0.5);
-                    expect(track.getPanning()).toBe(0.5);
+                    expect(track.getPanning()).toStrictEqual(0.5);
                 });
 
                 test("getVolume() returns what's passed to setVolume()", () => {
                     track.setVolume(0.5);
-                    expect(track.getVolume()).toBe(0.5);
+                    expect(track.getVolume()).toStrictEqual(0.5);
                 });
 
                 test("readMeter() returns right type", () => {
                     const result = track.readMeter();
 
-                    expect(typeof result).toBe("object");
+                    expect(typeof result).toStrictEqual("object");
 
                     expect(Object.getOwnPropertyNames(result)).toStrictEqual([
                         "peak",
@@ -393,14 +419,14 @@ describe("Engine", () => {
                     ]);
 
                     for (const stat of Object.values(result))
-                        expect(stat.length).toBe(2);
+                        expect(stat.length).toStrictEqual(2);
 
                     for (const number of Object.values(result).flat())
-                        expect(typeof number).toBe("number");
+                        expect(typeof number).toStrictEqual("number");
                 });
 
                 test("snapMeter() exists", () => {
-                    expect(typeof track.snapMeter).toBe("function");
+                    expect(typeof track.snapMeter).toStrictEqual("function");
                 });
             }
         });
@@ -421,12 +447,12 @@ describe("Engine", () => {
 
         test("getSampleRate()", () => {
             const clip = importTestClip();
-            expect(clip.getSampleRate()).toBe(48_000);
+            expect(clip.getSampleRate()).toStrictEqual(48_000);
         });
 
         test("getLength()", () => {
             const clip = importTestClip();
-            expect(clip.getLength()).toBe(1_322_978);
+            expect(clip.getLength()).toStrictEqual(1_322_978);
         });
     });
 
@@ -444,26 +470,26 @@ describe("Engine", () => {
         });
 
         test("getKey()", () => {
-            expect(typeof clip.getKey()).toBe("number");
+            expect(typeof clip.getKey()).toStrictEqual("number");
         });
 
         test("getStart()", () => {
-            expect(clip.getStart().getBeats()).toBe(1);
+            expect(clip.getStart().getBeats()).toStrictEqual(1);
         });
 
         test("getLength()", () => {
-            expect(clip.getLength().getBeats()).toBe(2);
+            expect(clip.getLength().getBeats()).toStrictEqual(2);
         });
 
         test("getLength() null", () => {
             const track = engine.addAudioTrack();
             clip = track.addClip(importTestClip(), Timestamp.fromBeats(1));
-            expect(clip.getLength().getBeats()).toBe(55);
+            expect(clip.getLength().getBeats()).toStrictEqual(55);
         });
 
         test("move()", () => {
             clip.move(Timestamp.fromBeats(2));
-            expect(clip.getStart().getBeats()).toBe(2);
+            expect(clip.getStart().getBeats()).toStrictEqual(2);
         });
 
         test("moveToTrack()", () => {
@@ -471,9 +497,9 @@ describe("Engine", () => {
 
             clip.moveToTrack(Timestamp.fromBeats(2), track2);
 
-            expect(track.getClips().length).toBe(0);
-            expect(track2.getClips().length).toBe(1);
-            expect(clip.getStart().getBeats()).toBe(2);
+            expect(track.getClips().length).toStrictEqual(0);
+            expect(track2.getClips().length).toStrictEqual(1);
+            expect(clip.getStart().getBeats()).toStrictEqual(2);
         });
 
         test("moveToTrack() overlap", () => {
@@ -491,14 +517,14 @@ describe("Engine", () => {
 
         test("cropStart()", () => {
             clip.cropStart(Timestamp.fromBeats(1));
-            expect(clip.getStart().getBeats()).toBe(2);
-            expect(clip.getLength().getBeats()).toBe(1);
+            expect(clip.getStart().getBeats()).toStrictEqual(2);
+            expect(clip.getLength().getBeats()).toStrictEqual(1);
         });
 
         test("cropEnd()", () => {
             clip.cropEnd(Timestamp.fromBeats(1));
-            expect(clip.getStart().getBeats()).toBe(1);
-            expect(clip.getLength().getBeats()).toBe(1);
+            expect(clip.getStart().getBeats()).toStrictEqual(1);
+            expect(clip.getLength().getBeats()).toStrictEqual(1);
         });
 
         test("getStoredClip()", () => {
@@ -508,8 +534,8 @@ describe("Engine", () => {
         test("getWaveform()", () => {
             const r = clip.getWaveform(42);
             // TODO: Use `toBeInstanceOf` when Jest fixes https://github.com/jestjs/jest/issues/11864
-            expect(r.constructor.name).toBe("Int16Array");
-            expect(r.length).toBe(2 * 2 * 42);
+            expect(r.constructor.name).toStrictEqual("Int16Array");
+            expect(r.length).toStrictEqual(2 * 2 * 42);
         });
 
         test("delete()", () => {
