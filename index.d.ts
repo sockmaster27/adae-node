@@ -354,9 +354,14 @@ export class AudioClip extends Clip {
     /**
      * Get the data needed to visualize the waveform of the clip.
      *
-     * The data is layed out as an array of channels, where each channel is an array of [min, max] pairs, with the length of `chunks`.
+     * The data will contain the clip's original number of channels, and will be interleaved like this:
+     * ```
+     * [minChannel1Chunk1, maxChannel1Chunk1, minChannel2Chunk1, maxChannel2Chunk1, minChannel1Chunk2, maxChannel1Chunk2, ...]
+     * ```
+     *
+     * The data will be normalized to fit within the range of a 16-bit signed integer, such that the highest peak in the clip will be at 32767 or -32768.
      */
-    getWaveform(chunks: number): Int16Array[][];
+    getWaveform(chunks: number): Int16Array;
 
     /**
      * Delete this clip from the track.
