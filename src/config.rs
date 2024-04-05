@@ -179,10 +179,6 @@ mod output_config {
             buffer_size,
         })
     }
-
-    #[derive(Debug)]
-    struct OutputConfigWrapper(adae::config::OutputConfig);
-    impl Finalize for OutputConfigWrapper {}
 }
 
 mod output_config_range {

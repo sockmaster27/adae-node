@@ -10,7 +10,7 @@ use neon::{prelude::*, types::Deferred};
 static CHANNEL: OnceLock<Mutex<Option<Channel>>> = OnceLock::new();
 static DEFERREDS: OnceLock<Mutex<Vec<Deferred>>> = OnceLock::new();
 thread_local! {
-    static ENABLED: Cell<bool> = Cell::new(true);
+    static ENABLED: Cell<bool> = const { Cell::new(true) };
 }
 
 pub fn listen_for_crash(mut cx: FunctionContext) -> JsResult<JsPromise> {

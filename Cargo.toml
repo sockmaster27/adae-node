@@ -12,7 +12,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 adae = { git = "https://github.com/sockmaster27/adae.git" }
-
 neon = "1.0.0"
 
 [features]
