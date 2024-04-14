@@ -25,13 +25,13 @@ pub mod audio_clip {
 
     fn unpack_this_clip<'a, R, F>(cx: &mut FunctionContext<'a>, callback: F) -> NeonResult<R>
     where
-        F: FnOnce(&mut FunctionContext<'a>, &adae::AudioClip) -> NeonResult<R>,
+        F: FnOnce(&mut FunctionContext<'a>, &mut adae::AudioClip) -> NeonResult<R>,
     {
         encapsulator::unpack_this(
             cx,
             |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
                 shared_engine.with_inner(cx, |cx, engine| {
-                    let clip = engine.audio_clip(**clip_key).or_throw(cx)?;
+                    let clip = engine.audio_clip_mut(**clip_key).or_throw(cx)?;
                     callback(cx, clip)
                 })
             },
@@ -190,7 +190,7 @@ pub mod audio_clip {
 
             unpack_this_clip(&mut cx, |cx, audio_clip| {
                 let waveform = audio_clip.waveform(chunks);
-                let waveform_js = JsInt16Array::from_slice(cx, &waveform)?;
+                let waveform_js = JsInt16Array::from_slice(cx, waveform)?;
                 Ok(waveform_js.as_value(cx))
             })
         }),
