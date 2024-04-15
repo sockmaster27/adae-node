@@ -532,7 +532,7 @@ describe("Engine", () => {
         });
 
         test("getWaveform()", () => {
-            const r = clip.getWaveform(42);
+            const r = clip.getWaveform();
             // TODO: Use `toBeInstanceOf` when Jest fixes https://github.com/jestjs/jest/issues/11864
             expect(r.constructor.name).toStrictEqual("Int16Array");
             expect(r.length).toStrictEqual(2 * 2 * 42);

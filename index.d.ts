@@ -361,7 +361,7 @@ export class AudioClip extends Clip {
      *
      * The data will be normalized to fit within the range of a 16-bit signed integer, such that the highest peak in the clip will be at 32767 or -32768.
      */
-    getWaveform(chunks: number): Int16Array;
+    getWaveform(): Int16Array;
 
     /**
      * Delete this clip from the track.

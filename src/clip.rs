@@ -185,14 +185,19 @@ pub mod audio_clip {
             )
         }),
         ("getWaveform", |mut cx| {
-            let chunks_js = cx.argument::<JsNumber>(0)?;
-            let chunks = chunks_js.value(&mut cx) as usize;
+            encapsulator::unpack_this(
+                &mut cx,
+                |cx, (shared_engine, clip_key): &(SharedEngine, AudioClipKeyWrapper)| {
+                    shared_engine.with_inner(cx, |cx, engine| {
+                        let bpm_cents = engine.bpm_cents();
 
-            unpack_this_clip(&mut cx, |cx, audio_clip| {
-                let waveform = audio_clip.waveform(chunks);
-                let waveform_js = JsInt16Array::from_slice(cx, waveform)?;
-                Ok(waveform_js.as_value(cx))
-            })
+                        let audio_clip = engine.audio_clip_mut(**clip_key).or_throw(cx)?;
+                        let waveform = audio_clip.waveform(bpm_cents);
+                        let waveform_js = JsInt16Array::from_slice(cx, waveform)?;
+                        Ok(waveform_js.as_value(cx))
+                    })
+                },
+            )
         }),
         ("delete", |mut cx| {
             encapsulator::unpack_this(
