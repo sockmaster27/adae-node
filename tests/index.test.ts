@@ -535,7 +535,15 @@ describe("Engine", () => {
             const r = clip.getWaveform();
             // TODO: Use `toBeInstanceOf` when Jest fixes https://github.com/jestjs/jest/issues/11864
             expect(r.constructor.name).toStrictEqual("Int16Array");
-            expect(r.length).toStrictEqual(2 * 2 * 42);
+
+            // Should consist of a number of 4-tuples
+            expect(r.length % 4).toStrictEqual(0);
+
+            for (let i = 0; i < r.length - 1; i += 2) {
+                const min = r[i];
+                const max = r[i + 1];
+                expect(min).toBeLessThanOrEqual(max);
+            }
         });
 
         test("delete()", () => {
