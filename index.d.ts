@@ -1,4 +1,4 @@
-// "#type" is used to disallow two types being mixed up.
+// "#brand" is used to disallow two types being mixed up.
 // It doesn't actually exist at runtime.
 // This is necessary because TypeScript's structural type system can't distinguish two opaque types.
 
@@ -20,7 +20,7 @@ export abstract class ExposedObject {
  * The Adae audio engine.
  */
 export class Engine extends ExposedObject {
-    #type: "Engine";
+    #brand: "Engine";
 
     /**
      * Create a dummy engine, for testing purposes.
@@ -169,7 +169,7 @@ export abstract class Track extends ExposedObject {
  * It is the final output of the mixer, and cannot be deleted.
  */
 export class MasterTrack extends Track {
-    #type: "MasterTrack";
+    #brand: "MasterTrack";
     private constructor();
 }
 
@@ -177,7 +177,7 @@ export class MasterTrack extends Track {
  * An audio track is a track that can contain audio clips on its timeline.
  */
 export class AudioTrack extends Track {
-    #type: "AudioTrack";
+    #brand: "AudioTrack";
     private constructor();
 
     /**
@@ -241,11 +241,11 @@ export class AudioTrack extends Track {
 
 export abstract class TrackState extends ExposedObject {}
 export class MasterTrackState extends TrackState {
-    #type: "MasterTrackState";
+    #brand: "MasterTrackState";
     private constructor();
 }
 export class AudioTrackState extends TrackState {
-    #type: "AudioTrackState";
+    #brand: "AudioTrackState";
     private constructor();
 }
 
@@ -261,7 +261,7 @@ export abstract class StoredClip extends ExposedObject {
     getKey(): number;
 }
 export class StoredAudioClip extends StoredClip {
-    #type: "StoredAudioClip";
+    #brand: "StoredAudioClip";
     private constructor();
 
     /**
@@ -338,7 +338,7 @@ export abstract class Clip extends ExposedObject {
  * Obtained from {@linkcode AudioTrack.addClip()}.
  */
 export class AudioClip extends Clip {
-    #type: "AudioClip";
+    #brand: "AudioClip";
     private constructor();
 
     /**
@@ -375,7 +375,7 @@ export class AudioClip extends Clip {
 
 export abstract class ClipState extends ExposedObject {}
 export class AudioClipState extends ClipState {
-    #type: "AudioClipState";
+    #brand: "AudioClipState";
     private constructor();
 }
 
@@ -384,7 +384,7 @@ export class AudioClipState extends ClipState {
  * which can be represented in different units.
  */
 export class Timestamp extends ExposedObject {
-    #type: "Timestamp";
+    #brand: "Timestamp";
     private constructor();
 
     /**
@@ -495,7 +495,7 @@ export namespace config {
      * Configuration of the engine.
      */
     class Config extends ExposedObject {
-        #type: "Config";
+        #brand: "Config";
 
         /**
          * Get a reasonable default configuration.
@@ -549,7 +549,7 @@ export namespace config {
      * This can be used to construct a valid {@linkcode OutputConfig} for a specific {@linkcode OutputDevice}.
      */
     class OutputConfigRange extends ExposedObject {
-        #type: "OutputConfigRange";
+        #brand: "OutputConfigRange";
         private constructor();
 
         /**
@@ -607,7 +607,7 @@ export namespace config {
      * A host can have zero, one or multiple {@linkcode OutputDevice}s, which are the actual audio devices that can be used.
      */
     class Host extends ExposedObject {
-        #type: "Host";
+        #brand: "Host";
         private constructor();
 
         /**
@@ -640,7 +640,7 @@ export namespace config {
      * It can be retrieved from a {@linkcode Host} through either {@linkcode Host.outputDevices()} or {@linkcode Host.defaultOutputDevice()}.
      */
     class OutputDevice extends ExposedObject {
-        #type: "OutputDevice";
+        #brand: "OutputDevice";
         private constructor();
 
         /**
