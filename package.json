@@ -5,7 +5,7 @@
     "main": "index.node",
     "types": "index.d.ts",
     "scripts": {
-        "build-inner": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
+        "build-inner": "cargo-cp-artifact -ac adae-node index.node -- cargo build --message-format=json-render-diagnostics",
         "build-debug": "npm run build-inner -- --features custom_debug_output",
         "build-record": "npm run build-inner -- --features custom_debug_output,record_output",
         "build": "npm run build-inner -- --release",
