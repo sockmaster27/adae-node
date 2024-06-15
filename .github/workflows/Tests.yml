@@ -22,12 +22,12 @@ jobs:
             - name: Setup Credentials
               run: git config --global url."https://${{ secrets.GIT_CREDENTIALS }}@github.com".insteadOf https://github.com
             - name: Install Dependencies
-              run: npm ci
+              run: bun ci
             - name: Check with Clippy
               run: |
                   cargo update
                   cargo clippy --all-targets --all-features -- -D warnings
             - name: Build
-              run: npm run build-debug
+              run: bun run build-debug
             - name: Run Tests
-              run: npm test
+              run: bun test
