@@ -18,15 +18,18 @@ jobs:
         timeout-minutes: 10
         steps:
             - uses: actions/checkout@v4
-            - run: rustup default stable
+            - name: Setup Rust Toolchain
+              run: |
+                  cargo update
+                  rustup default stable
             - name: Setup Credentials for Accessing Private Adae Repo
               run: git config --global url."https://${{ secrets.GIT_CREDENTIALS }}@github.com".insteadOf https://github.com
             - name: Install Dependencies
               run: bun install
+            - name: Check Formatting
+              run: cargo fmt --all -- --check
             - name: Check with Clippy
-              run: |
-                  cargo update
-                  cargo clippy --all-targets --all-features -- -D warnings
+              run: cargo clippy --all-targets --all-features -- -D warnings
             - name: Build
               run: bun run build-debug
             - name: Run Tests
