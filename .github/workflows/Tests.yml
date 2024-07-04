@@ -13,20 +13,20 @@ jobs:
     build_and_test:
         name: Build and Test
         runs-on: ubuntu-latest
-        container:
-            image: holgermogensen/voil-ci:adae-node
         timeout-minutes: 10
         steps:
             - uses: actions/checkout@v4
-            - run: rustup default stable
+            - uses: actions-rust-lang/setup-rust-toolchain@v1
+            - uses: oven-sh/setup-bun@v2
             - name: Setup Credentials for Accessing Private Adae Repo
               run: git config --global url."https://${{ secrets.GIT_CREDENTIALS }}@github.com".insteadOf https://github.com
+
             - name: Install Dependencies
               run: bun install --frozen-lockfile
             - name: Check with Clippy
-              run: |
-                  cargo update
-                  cargo clippy --all-targets --all-features -- -D warnings
+              run: cargo clippy --all-targets --all-features -- -D warnings
+            - name: Check with rustfmt
+              run: cargo fmt --all -- --check
             - name: Build
               run: bun run build-debug
             - name: Run Tests
