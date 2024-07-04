@@ -12,4 +12,5 @@ RUN apt-get update
 RUN apt-get install -y git
 
 # Install Bun
+RUN apt-get install -y unzip
 RUN curl -fsSL https://bun.sh/install | bash
