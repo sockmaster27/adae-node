@@ -22,7 +22,7 @@ jobs:
               run: git config --global url."https://${{ secrets.GIT_CREDENTIALS }}@github.com".insteadOf https://github.com
 
             - name: Install Dependencies
-              run: bun install --frozen-lockfile
+              run: bun install
             - name: Check with Clippy
               run: cargo clippy --all-targets --all-features -- -D warnings
             - name: Check with rustfmt
