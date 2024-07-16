@@ -5,7 +5,4 @@ index.node
 npm-debug.log*
 tests/build
 
-bun.lockb
-Cargo.lock
-
 .secrets
