@@ -20,8 +20,8 @@ jobs:
             - uses: actions/checkout@v4
             - name: Setup Rust Toolchain
               run: |
-                  cargo update
                   rustup default stable
+                  cargo update
             - name: Setup Credentials for Accessing Private Adae Repo
               run: git config --global url."https://${{ secrets.GIT_CREDENTIALS }}@github.com".insteadOf https://github.com
             - name: Install Dependencies
