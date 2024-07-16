@@ -25,12 +25,12 @@ jobs:
                   rustup default stable
                   cargo update
             - name: Install Dependencies
-              run: bun install
+              run: npm ci
             - name: Check Formatting
               run: cargo fmt --all -- --check
             - name: Check with Clippy
               run: cargo clippy --all-targets --all-features -- -D warnings
             - name: Build
-              run: bun run build-debug
+              run: npm run build-debug
             - name: Run Tests
-              run: bun test
+              run: npm test
