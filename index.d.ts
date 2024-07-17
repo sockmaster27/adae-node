@@ -417,7 +417,7 @@ export class Timestamp extends ExposedObject {
     static mul(ts: Timestamp, s: number): Timestamp;
 
     /**
-     * The smallest possible timestamp representing the very beginning (regardless of unit)
+     * The smallest possible timestamp representing the very beginning (regardless of unit).
      */
     static zero(): Timestamp;
     /**
@@ -511,8 +511,39 @@ export namespace config {
     /**
      * Configuration of the output stream of the engine.
      *
-     * All values should be chosen from a {@linkcode OutputConfigRange} reported by the specific {@linkcode OutputDevice},
+     * All values should be chosen from an {@linkcode OutputConfigRange} reported by the specific {@linkcode OutputDevice},
      * through either {@linkcode OutputDevice.supportedConfigRanges()} or {@linkcode OutputDevice.defaultConfigRange()}.
+     *
+     * # Example
+     * ```typescript
+     * // Get the default output device.
+     * const device = Host.default().defaultOutputDevice();
+     *
+     * // Get the default configuration range for this device.
+     * const supportedRange = device.defaultConfigRange();
+     *
+     * // Pick the smallest sample rate within this range.
+     * const sampleRate = supportedRange.sampleRate().min;
+     *
+     * // Pick the smallest buffer size within this range (or null if unknown).
+     * let bufferSize;
+     * if (supportedRange.bufferSize() === null) {
+     *     bufferSize = null;
+     * } else {
+     *     bufferSize = supportedRange.bufferSize().min;
+     * }
+     *
+     * // Use the supported range to construct a valid output config.
+     * const outputConfig: OutputConfig = {
+     *     channels: supportedRange.channels(),
+     *     sampleFormat: supportedRange.sampleFormat(),
+     *     sampleRate,
+     *     bufferSize,
+     * };
+     *
+     * // Create the engine with the chosen configuration.
+     * const engine = new Engine(config);
+     * ```
      */
     interface OutputConfig {
         /**
