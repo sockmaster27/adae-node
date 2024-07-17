@@ -1,8 +1,11 @@
 target
 index.node
+tests/build
+
 **/node_modules
 **/.DS_Store
 npm-debug.log*
-tests/build
+
+package-lock.json
 
 .secrets
