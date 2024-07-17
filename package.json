@@ -20,16 +20,5 @@
         "jest": "^29.7.0",
         "ts-jest": "^29.2.2",
         "typescript": "^5.5.3"
-    },
-    "jest": {
-        "testRegex": "test.ts$",
-        "transform": {
-            "\\.ts$": [
-                "ts-jest",
-                {
-                    "tsconfig": "tests/tsconfig.json"
-                }
-            ]
-        }
     }
 }

@@ -7,3 +7,4 @@ tests
 .prettierignore
 .prettierrc
 index.node
+jest.config.json

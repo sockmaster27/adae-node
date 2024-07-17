@@ -1,0 +1,4 @@
+{
+    "rootDir": "tests/",
+    "preset": "ts-jest"
+}
