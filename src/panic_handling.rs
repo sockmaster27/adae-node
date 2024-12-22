@@ -53,7 +53,7 @@ pub fn stop_listening_for_crash(mut cx: FunctionContext) -> JsResult<JsUndefined
     Ok(cx.undefined())
 }
 
-fn panic_hook(info: &panic::PanicInfo) {
+fn panic_hook(info: &panic::PanicHookInfo) {
     let enabled = ENABLED.with(|e| e.get());
     if !enabled {
         return;
