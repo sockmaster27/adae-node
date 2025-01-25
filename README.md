@@ -9,10 +9,10 @@ This unfortunately means that it is not compatible with browsers, or any other e
 
 The Node-API is supported in:
 
--   Node.js
--   Electron
--   Deno (partially)
--   Bun (partially)
+- Node.js
+- Electron
+- Deno (partially)
+- Bun (partially)
 
 The library is implemented on top of [Neon](https://github.com/neon-bindings/neon#readme), so please refer to that for more granular information about supported platforms etc.
 
