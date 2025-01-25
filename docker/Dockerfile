@@ -12,9 +12,9 @@ RUN apt-get update
 RUN apt-get install -y git
 
 # Install Node and NPM
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 # Must use the shell in 'interactive' mode?
 SHELL ["/bin/bash", "-c", "-i"]
-RUN source ~/.bashrc && nvm install v18.19.0
+RUN source ~/.bashrc && nvm install v22.13.1
 SHELL ["/bin/bash", "-c"]
-ENV PATH="/root/.nvm/versions/node/v18.19.0/bin:$PATH"
+ENV PATH="/root/.nvm/versions/node/v22.13.1/bin:$PATH"
