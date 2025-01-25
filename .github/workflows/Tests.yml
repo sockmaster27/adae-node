@@ -18,8 +18,6 @@ jobs:
         timeout-minutes: 10
         steps:
             - uses: actions/checkout@v4
-            - name: Setup Credentials for Accessing Private Adae Repo
-              run: git config --global url."https://${{ secrets.GIT_CREDENTIALS }}@github.com".insteadOf https://github.com
             - name: Setup Rust Toolchain
               run: |
                   rustup default stable
