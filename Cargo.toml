@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 adae = { git = "https://github.com/sockmaster27/adae.git" }
-neon = "1.0.0"
+neon = "1.1.0"
 
 [features]
 record_output = ["adae/record_output"]
