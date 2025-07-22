@@ -14,7 +14,7 @@
         "test": "npm run build-debug && jest"
     },
     "devDependencies": {
-        "@types/jest": "^29.5.12",
+        "@types/jest": "^30.0.0",
         "cargo-cp-artifact": "^0.1.9",
         "jest": "^30.0.5",
         "ts-jest": "^29.2.2",
